@@ -1,5 +1,5 @@
-name: storecraft_studio
-description: "Client-side high-res App Store and Google Play Store mockup screenshot generator built with Flutter Web."
+name: mocuply
+description: "Design high-resolution App Store and Google Play mockup screenshots directly in your browser. 100% free, client-side, open-source."
 publish_to: 'none'
 
 version: 1.0.0+1
