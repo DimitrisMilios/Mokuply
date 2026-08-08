@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/constants/store_specs.dart';
+import '../models/canvas_text_item.dart';
 import '../models/project_template.dart';
 import '../models/template_data.dart';
 import '../services/export_service.dart';
@@ -38,8 +39,12 @@ class EditorViewModel extends ChangeNotifier {
   String get subtitleFont => data.subtitleFont;
   double get titleSize => data.titleSize;
   double get subtitleSize => data.subtitleSize;
+  FontWeight get titleWeight => data.titleWeight;
+  FontWeight get subtitleWeight => data.subtitleWeight;
   Color get textColor => data.textColor;
   Color get subtitleColor => data.subtitleColor;
+  TextAlign get titleAlignment => data.titleAlignment;
+  TextAlign get subtitleAlignment => data.subtitleAlignment;
   int get selectedGradientIndex => data.selectedGradientIndex;
   Color? get customBackgroundColor => data.customBackgroundColor;
   List<Color>? get customGradientColors => data.customGradientColors;
@@ -51,8 +56,11 @@ class EditorViewModel extends ChangeNotifier {
   double get deviceScale => data.deviceScale;
   double get deviceOffsetX => data.deviceOffsetX;
   double get deviceOffsetY => data.deviceOffsetY;
-  double get textOffsetX => data.textOffsetX;
-  double get textOffsetY => data.textOffsetY;
+  double get textOffsetX => data.textOffsetX; // Title X offset
+  double get textOffsetY => data.textOffsetY; // Title Y offset
+  double get subtitleOffsetX => data.subtitleOffsetX;
+  double get subtitleOffsetY => data.subtitleOffsetY;
+  List<CanvasTextItem> get customTextItems => data.customTextItems;
   double get deviceRotation => data.deviceRotation;
   bool get hasShadow => data.hasShadow;
 
@@ -120,15 +128,104 @@ class EditorViewModel extends ChangeNotifier {
     }
   }
 
+  void setSubtitleOffsets(double offsetX, double offsetY) {
+    _updateCurrentScreenshot(data.copyWith(
+      subtitleOffsetX: offsetX,
+      subtitleOffsetY: offsetY,
+    ));
+  }
+
+  void setSubtitleOffsetsForIndex(int index, double offsetX, double offsetY) {
+    if (index >= 0 && index < _screenshots.length) {
+      _screenshots[index] = _screenshots[index].copyWith(
+        subtitleOffsetX: offsetX,
+        subtitleOffsetY: offsetY,
+      );
+      notifyListeners();
+    }
+  }
+
   void resetCanvasOffsets() {
     _updateCurrentScreenshot(data.copyWith(
       deviceOffsetX: 0.0,
       deviceOffsetY: 0.0,
       textOffsetX: 0.0,
       textOffsetY: 0.0,
+      subtitleOffsetX: 0.0,
+      subtitleOffsetY: 0.0,
       deviceRotation: 0.0,
       deviceScale: 0.85,
     ));
+  }
+
+  // --- Mutators for Custom Extra Text Elements ---
+
+  void addCustomTextElement() {
+    final newItem = CanvasTextItem(
+      id: 'txt_${DateTime.now().millisecondsSinceEpoch}',
+      text: 'New Text Element',
+      fontSize: 28.0,
+      color: Colors.white,
+      font: 'Outfit',
+      weight: FontWeight.w600,
+      alignment: TextAlign.center,
+      offsetX: 0.0,
+      offsetY: 80.0,
+    );
+    final updatedList = List<CanvasTextItem>.from(data.customTextItems)..add(newItem);
+    _updateCurrentScreenshot(data.copyWith(customTextItems: updatedList));
+  }
+
+  void updateCustomTextElement(String id, CanvasTextItem updated) {
+    final updatedList = data.customTextItems.map((item) {
+      return item.id == id ? updated : item;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(customTextItems: updatedList));
+  }
+
+  void updateCustomTextElementForIndex(int index, String id, CanvasTextItem updated) {
+    if (index >= 0 && index < _screenshots.length) {
+      final currentList = _screenshots[index].customTextItems;
+      final updatedList = currentList.map((item) {
+        return item.id == id ? updated : item;
+      }).toList();
+      _screenshots[index] = _screenshots[index].copyWith(customTextItems: updatedList);
+      notifyListeners();
+    }
+  }
+
+  void setCustomTextElementOffsetsForIndex(int index, String id, double offsetX, double offsetY) {
+    if (index >= 0 && index < _screenshots.length) {
+      final currentList = _screenshots[index].customTextItems;
+      final updatedList = currentList.map((item) {
+        return item.id == id ? item.copyWith(offsetX: offsetX, offsetY: offsetY) : item;
+      }).toList();
+      _screenshots[index] = _screenshots[index].copyWith(customTextItems: updatedList);
+      notifyListeners();
+    }
+  }
+
+  void removeCustomTextElement(String id) {
+    final updatedList = data.customTextItems.where((item) => item.id != id).toList();
+    _updateCurrentScreenshot(data.copyWith(customTextItems: updatedList));
+  }
+
+  // --- Typography Mutators ---
+
+  void setTitleWeight(FontWeight weight) {
+    _updateCurrentScreenshot(data.copyWith(titleWeight: weight));
+  }
+
+  void setSubtitleWeight(FontWeight weight) {
+    _updateCurrentScreenshot(data.copyWith(subtitleWeight: weight));
+  }
+
+  void setTitleAlignment(TextAlign alignment) {
+    _updateCurrentScreenshot(data.copyWith(titleAlignment: alignment));
+  }
+
+  void setSubtitleAlignment(TextAlign alignment) {
+    _updateCurrentScreenshot(data.copyWith(subtitleAlignment: alignment));
   }
 
   // --- Mutators for Background & Screenshots ---

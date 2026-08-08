@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/constants/store_specs.dart';
+import 'canvas_text_item.dart';
 
 /// Pure immutable data model for a mockup template.
 @immutable
@@ -14,8 +15,12 @@ class TemplateData {
   final String subtitleFont;
   final double titleSize;
   final double subtitleSize;
+  final FontWeight titleWeight;
+  final FontWeight subtitleWeight;
   final Color textColor;
   final Color subtitleColor;
+  final TextAlign titleAlignment;
+  final TextAlign subtitleAlignment;
   final int selectedGradientIndex;
   final Color? customBackgroundColor;
   final List<Color>? customGradientColors;
@@ -26,8 +31,11 @@ class TemplateData {
   final double deviceScale;
   final double deviceOffsetX;
   final double deviceOffsetY;
-  final double textOffsetX;
-  final double textOffsetY;
+  final double textOffsetX; // Title X offset
+  final double textOffsetY; // Title Y offset
+  final double subtitleOffsetX;
+  final double subtitleOffsetY;
+  final List<CanvasTextItem> customTextItems;
   final double deviceRotation;
   final bool hasShadow;
 
@@ -41,8 +49,12 @@ class TemplateData {
     this.subtitleFont = 'Inter',
     this.titleSize = 54.0,
     this.subtitleSize = 26.0,
+    this.titleWeight = FontWeight.w700,
+    this.subtitleWeight = FontWeight.w500,
     this.textColor = Colors.white,
     this.subtitleColor = const Color(0xFFE2E8F0),
+    this.titleAlignment = TextAlign.center,
+    this.subtitleAlignment = TextAlign.center,
     this.selectedGradientIndex = 0,
     this.customBackgroundColor,
     this.customGradientColors,
@@ -55,6 +67,9 @@ class TemplateData {
     this.deviceOffsetY = 0.0,
     this.textOffsetX = 0.0,
     this.textOffsetY = 0.0,
+    this.subtitleOffsetX = 0.0,
+    this.subtitleOffsetY = 0.0,
+    this.customTextItems = const [],
     this.deviceRotation = 0.0,
     this.hasShadow = true,
   });
@@ -80,8 +95,12 @@ class TemplateData {
     String? subtitleFont,
     double? titleSize,
     double? subtitleSize,
+    FontWeight? titleWeight,
+    FontWeight? subtitleWeight,
     Color? textColor,
     Color? subtitleColor,
+    TextAlign? titleAlignment,
+    TextAlign? subtitleAlignment,
     int? selectedGradientIndex,
     Color? Function()? customBackgroundColor,
     List<Color>? Function()? customGradientColors,
@@ -94,6 +113,9 @@ class TemplateData {
     double? deviceOffsetY,
     double? textOffsetX,
     double? textOffsetY,
+    double? subtitleOffsetX,
+    double? subtitleOffsetY,
+    List<CanvasTextItem>? customTextItems,
     double? deviceRotation,
     bool? hasShadow,
   }) {
@@ -107,8 +129,12 @@ class TemplateData {
       subtitleFont: subtitleFont ?? this.subtitleFont,
       titleSize: titleSize ?? this.titleSize,
       subtitleSize: subtitleSize ?? this.subtitleSize,
+      titleWeight: titleWeight ?? this.titleWeight,
+      subtitleWeight: subtitleWeight ?? this.subtitleWeight,
       textColor: textColor ?? this.textColor,
       subtitleColor: subtitleColor ?? this.subtitleColor,
+      titleAlignment: titleAlignment ?? this.titleAlignment,
+      subtitleAlignment: subtitleAlignment ?? this.subtitleAlignment,
       selectedGradientIndex: selectedGradientIndex ?? this.selectedGradientIndex,
       customBackgroundColor: customBackgroundColor != null ? customBackgroundColor() : this.customBackgroundColor,
       customGradientColors: customGradientColors != null ? customGradientColors() : this.customGradientColors,
@@ -121,6 +147,9 @@ class TemplateData {
       deviceOffsetY: deviceOffsetY ?? this.deviceOffsetY,
       textOffsetX: textOffsetX ?? this.textOffsetX,
       textOffsetY: textOffsetY ?? this.textOffsetY,
+      subtitleOffsetX: subtitleOffsetX ?? this.subtitleOffsetX,
+      subtitleOffsetY: subtitleOffsetY ?? this.subtitleOffsetY,
+      customTextItems: customTextItems ?? this.customTextItems,
       deviceRotation: deviceRotation ?? this.deviceRotation,
       hasShadow: hasShadow ?? this.hasShadow,
     );
