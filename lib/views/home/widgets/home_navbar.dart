@@ -5,19 +5,29 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/glass_container.dart';
 
-/// Top header navigation bar for HomeView.
+/// Floating sticky top header navigation bar for HomeView.
 class HomeNavbar extends StatelessWidget {
   const HomeNavbar({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.only(top: 16.0, left: 24.0, right: 24.0, bottom: 8.0),
       child: GlassContainer(
         height: AppDimensions.navbarHeight,
-        opacity: 0.75,
+        opacity: 0.8,
+        blurX: 16,
+        blurY: 16,
         borderRadius: BorderRadius.circular(AppDimensions.radiusGlassLg),
         borderColor: AppColors.glassBorder,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.glassShadow,
+            blurRadius: 24,
+            spreadRadius: 0,
+            offset: const Offset(0, 8),
+          ),
+        ],
         padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingXxl),
         child: Row(
           children: [

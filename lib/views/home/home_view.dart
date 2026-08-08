@@ -8,7 +8,7 @@ import 'widgets/hero_section.dart';
 import 'widgets/template_card.dart';
 import 'widgets/home_footer.dart';
 
-/// Clean declarative HomeView composed of modular subwidgets.
+/// HomeView with sticky floating glass navbar overlay over scrollable store content.
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
 
@@ -17,12 +17,12 @@ class HomeView extends StatelessWidget {
     return const Scaffold(
       backgroundColor: AppColors.background,
       body: AmbientBackground(
-        child: Column(
+        child: Stack(
           children: [
-            HomeNavbar(),
-            Expanded(
+            // 1. Main Scrollable Page Content (Passes underneath floating navbar)
+            Positioned.fill(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                padding: EdgeInsets.only(top: 110, left: 32, right: 32, bottom: 24),
                 child: Column(
                   children: [
                     HeroSection(),
@@ -33,6 +33,14 @@ class HomeView extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
+
+            // 2. Sticky Floating Glass Header Navbar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: HomeNavbar(),
             ),
           ],
         ),
