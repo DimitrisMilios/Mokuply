@@ -146,7 +146,7 @@ class _RealisticIPhone16ProMaxFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Ultra-rounded continuous squircle corners matching real iPhone Pro Max chassis
-    final double outerCornerRadius = 96 * scale;
+    final double outerCornerRadius = 160 * scale;
     final double titaniumFrameThickness = 12 * scale; // Bold, thick titanium frame
     final double displayBezelThickness = 16 * scale;  // Bold, thick black screen bezel
     final double totalFramePadding = titaniumFrameThickness + displayBezelThickness;
@@ -182,10 +182,10 @@ class _RealisticIPhone16ProMaxFrame extends StatelessWidget {
           // Silent / Action Switch (Top Left)
           Positioned(
             left: 0,
-            top: 130 * scale,
+            top: 300 * scale,
             child: _buildSideButton(
               width: buttonWidth,
-              height: 36 * scale,
+              height: 100 * scale,
               isLeft: true,
               gradientColors: const [Color(0xFF6B6F78), Color(0xFF2C2E33), Color(0xFF484D55)],
             ),
@@ -193,10 +193,10 @@ class _RealisticIPhone16ProMaxFrame extends StatelessWidget {
           // Volume Up Button (Upper-Left)
           Positioned(
             left: 0,
-            top: 180 * scale,
+            top: 450 * scale,
             child: _buildSideButton(
               width: buttonWidth,
-              height: 74 * scale,
+              height: 200 * scale,
               isLeft: true,
               gradientColors: const [Color(0xFF6B6F78), Color(0xFF2C2E33), Color(0xFF484D55)],
             ),
@@ -204,10 +204,10 @@ class _RealisticIPhone16ProMaxFrame extends StatelessWidget {
           // Volume Down Button (Middle-Left)
           Positioned(
             left: 0,
-            top: 268 * scale,
+            top: 680 * scale,
             child: _buildSideButton(
               width: buttonWidth,
-              height: 74 * scale,
+              height: 200 * scale,
               isLeft: true,
               gradientColors: const [Color(0xFF6B6F78), Color(0xFF2C2E33), Color(0xFF484D55)],
             ),
@@ -216,10 +216,10 @@ class _RealisticIPhone16ProMaxFrame extends StatelessWidget {
           // 2. EXTRA LARGE RIGHT HARDWARE BUTTON (Power Key Centered Vertically)
           Positioned(
             right: 0,
-            top: (deviceHeight - (124 * scale)) / 2, // Centered vertically in exact middle of right edge!
+            top: 560 * scale, // Centered vertically in exact middle of right edge!
             child: _buildSideButton(
               width: buttonWidth,
-              height: 124 * scale,
+              height: 250 * scale,
               isLeft: false,
               gradientColors: const [Color(0xFF727680), Color(0xFF30333A), Color(0xFF50555F)],
             ),
@@ -284,17 +284,17 @@ class _RealisticIPhone16ProMaxFrame extends StatelessWidget {
 
                                 // 5. EXTRA LARGE DYNAMIC ISLAND (Massive Pill Cutout with Dual Sensors)
                                 Positioned(
-                                  top: 18 * scale,
+                                  top: 40 * scale,
                                   left: 0,
                                   right: 0,
                                   child: Center(
                                     child: Container(
-                                      width: 195 * scale, // Extra wide Dynamic Island
-                                      height: 48 * scale, // Extra tall Dynamic Island
+                                      width: 300 * scale, // Extra wide Dynamic Island
+                                      height:80 * scale, // Extra tall Dynamic Island
                                       padding: EdgeInsets.symmetric(horizontal: 18 * scale),
                                       decoration: BoxDecoration(
                                         color: Colors.black,
-                                        borderRadius: BorderRadius.circular(24 * scale),
+                                        borderRadius: BorderRadius.circular(38 * scale),
                                         boxShadow: [
                                           BoxShadow(
                                             color: Colors.black.withValues(alpha: 0.6),
