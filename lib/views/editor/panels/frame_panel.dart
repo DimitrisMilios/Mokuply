@@ -161,6 +161,24 @@ class FramePanel extends StatelessWidget {
               onChanged: (val) => vm.setHasShadow(val),
             ),
           ),
+          const SizedBox(height: AppDimensions.spacingSm),
+          // Reset drag positions button
+          OutlinedButton.icon(
+            onPressed: () => vm.resetCanvasOffsets(),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.textMuted,
+              side: const BorderSide(color: AppColors.glassBorder),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              ),
+            ),
+            icon: const Icon(Icons.restart_alt_rounded, size: 16),
+            label: const Text(
+              'Reset Drag Positions',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );

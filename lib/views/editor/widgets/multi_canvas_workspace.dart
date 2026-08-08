@@ -44,8 +44,10 @@ class MultiCanvasWorkspace extends StatelessWidget {
                       final itemData = vm.screenshots[index];
                       final isSelected = vm.selectedIndex == index;
 
-                      return GestureDetector(
-                        onTap: () => vm.selectScreenshot(index),
+                      return Listener(
+                        onPointerDown: (_) {
+                          if (!isSelected) vm.selectScreenshot(index);
+                        },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -72,6 +74,7 @@ class MultiCanvasWorkspace extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(AppDimensions.radiusLg - 2),
                                 child: CanvasMockupWidget(
                                   data: itemData,
+                                  itemIndex: index,
                                   canvasSize: Size(previewWidth, previewHeight),
                                 ),
                               ),

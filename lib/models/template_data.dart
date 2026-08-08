@@ -19,9 +19,15 @@ class TemplateData {
   final int selectedGradientIndex;
   final Color? customBackgroundColor;
   final List<Color>? customGradientColors;
+  final Uint8List? customBackgroundImageBytes;
   final Uint8List? screenshotBytes;
+  final Uint8List? iphoneScreenshotBytes;
+  final Uint8List? samsungScreenshotBytes;
   final double deviceScale;
+  final double deviceOffsetX;
   final double deviceOffsetY;
+  final double textOffsetX;
+  final double textOffsetY;
   final double deviceRotation;
   final bool hasShadow;
 
@@ -40,12 +46,29 @@ class TemplateData {
     this.selectedGradientIndex = 0,
     this.customBackgroundColor,
     this.customGradientColors,
+    this.customBackgroundImageBytes,
     this.screenshotBytes,
+    this.iphoneScreenshotBytes,
+    this.samsungScreenshotBytes,
     this.deviceScale = 0.85,
+    this.deviceOffsetX = 0.0,
     this.deviceOffsetY = 0.0,
+    this.textOffsetX = 0.0,
+    this.textOffsetY = 0.0,
     this.deviceRotation = 0.0,
     this.hasShadow = true,
   });
+
+  /// Computes effective screenshot bytes for active device model style (per-platform override or shared screenshot)
+  Uint8List? get effectiveScreenshotBytes {
+    if (frameStyle == DeviceFrameStyle.iphone16ProMax && iphoneScreenshotBytes != null) {
+      return iphoneScreenshotBytes;
+    }
+    if (frameStyle == DeviceFrameStyle.samsungS26Ultra && samsungScreenshotBytes != null) {
+      return samsungScreenshotBytes;
+    }
+    return screenshotBytes;
+  }
 
   TemplateData copyWith({
     TargetPlatformType? platform,
@@ -62,9 +85,15 @@ class TemplateData {
     int? selectedGradientIndex,
     Color? Function()? customBackgroundColor,
     List<Color>? Function()? customGradientColors,
+    Uint8List? Function()? customBackgroundImageBytes,
     Uint8List? Function()? screenshotBytes,
+    Uint8List? Function()? iphoneScreenshotBytes,
+    Uint8List? Function()? samsungScreenshotBytes,
     double? deviceScale,
+    double? deviceOffsetX,
     double? deviceOffsetY,
+    double? textOffsetX,
+    double? textOffsetY,
     double? deviceRotation,
     bool? hasShadow,
   }) {
@@ -83,11 +112,18 @@ class TemplateData {
       selectedGradientIndex: selectedGradientIndex ?? this.selectedGradientIndex,
       customBackgroundColor: customBackgroundColor != null ? customBackgroundColor() : this.customBackgroundColor,
       customGradientColors: customGradientColors != null ? customGradientColors() : this.customGradientColors,
+      customBackgroundImageBytes: customBackgroundImageBytes != null ? customBackgroundImageBytes() : this.customBackgroundImageBytes,
       screenshotBytes: screenshotBytes != null ? screenshotBytes() : this.screenshotBytes,
+      iphoneScreenshotBytes: iphoneScreenshotBytes != null ? iphoneScreenshotBytes() : this.iphoneScreenshotBytes,
+      samsungScreenshotBytes: samsungScreenshotBytes != null ? samsungScreenshotBytes() : this.samsungScreenshotBytes,
       deviceScale: deviceScale ?? this.deviceScale,
+      deviceOffsetX: deviceOffsetX ?? this.deviceOffsetX,
       deviceOffsetY: deviceOffsetY ?? this.deviceOffsetY,
+      textOffsetX: textOffsetX ?? this.textOffsetX,
+      textOffsetY: textOffsetY ?? this.textOffsetY,
       deviceRotation: deviceRotation ?? this.deviceRotation,
       hasShadow: hasShadow ?? this.hasShadow,
     );
   }
 }
+

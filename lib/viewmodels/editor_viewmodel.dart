@@ -43,9 +43,16 @@ class EditorViewModel extends ChangeNotifier {
   int get selectedGradientIndex => data.selectedGradientIndex;
   Color? get customBackgroundColor => data.customBackgroundColor;
   List<Color>? get customGradientColors => data.customGradientColors;
+  Uint8List? get customBackgroundImageBytes => data.customBackgroundImageBytes;
   Uint8List? get screenshotBytes => data.screenshotBytes;
+  Uint8List? get iphoneScreenshotBytes => data.iphoneScreenshotBytes;
+  Uint8List? get samsungScreenshotBytes => data.samsungScreenshotBytes;
+  Uint8List? get effectiveScreenshotBytes => data.effectiveScreenshotBytes;
   double get deviceScale => data.deviceScale;
+  double get deviceOffsetX => data.deviceOffsetX;
   double get deviceOffsetY => data.deviceOffsetY;
+  double get textOffsetX => data.textOffsetX;
+  double get textOffsetY => data.textOffsetY;
   double get deviceRotation => data.deviceRotation;
   bool get hasShadow => data.hasShadow;
 
@@ -68,6 +75,103 @@ class EditorViewModel extends ChangeNotifier {
       currentData.selectedGradientIndex % StoreSpecs.gradientPresets.length
     ].toDecoration();
   }
+
+  // --- Mutators for Canvas Freeform Drag & Offsets ---
+
+  void setDeviceOffsetX(double offsetX) {
+    _updateCurrentScreenshot(data.copyWith(deviceOffsetX: offsetX));
+  }
+
+  void setDeviceOffsetY(double offsetY) {
+    _updateCurrentScreenshot(data.copyWith(deviceOffsetY: offsetY));
+  }
+
+  void setDeviceOffsets(double offsetX, double offsetY) {
+    _updateCurrentScreenshot(data.copyWith(
+      deviceOffsetX: offsetX,
+      deviceOffsetY: offsetY,
+    ));
+  }
+
+  void setDeviceOffsetsForIndex(int index, double offsetX, double offsetY) {
+    if (index >= 0 && index < _screenshots.length) {
+      _screenshots[index] = _screenshots[index].copyWith(
+        deviceOffsetX: offsetX,
+        deviceOffsetY: offsetY,
+      );
+      notifyListeners();
+    }
+  }
+
+  void setTextOffsets(double offsetX, double offsetY) {
+    _updateCurrentScreenshot(data.copyWith(
+      textOffsetX: offsetX,
+      textOffsetY: offsetY,
+    ));
+  }
+
+  void setTextOffsetsForIndex(int index, double offsetX, double offsetY) {
+    if (index >= 0 && index < _screenshots.length) {
+      _screenshots[index] = _screenshots[index].copyWith(
+        textOffsetX: offsetX,
+        textOffsetY: offsetY,
+      );
+      notifyListeners();
+    }
+  }
+
+  void resetCanvasOffsets() {
+    _updateCurrentScreenshot(data.copyWith(
+      deviceOffsetX: 0.0,
+      deviceOffsetY: 0.0,
+      textOffsetX: 0.0,
+      textOffsetY: 0.0,
+      deviceRotation: 0.0,
+      deviceScale: 0.85,
+    ));
+  }
+
+  // --- Mutators for Background & Screenshots ---
+
+  void setCustomBackgroundImage(Uint8List? bytes) {
+    _updateCurrentScreenshot(data.copyWith(
+      customBackgroundImageBytes: () => bytes,
+    ));
+  }
+
+  Future<void> pickCustomBackgroundImage() async {
+    final bytes = await FileService.pickImageBytes();
+    if (bytes != null) {
+      setCustomBackgroundImage(bytes);
+    }
+  }
+
+  void setScreenshotBytes(Uint8List? bytes) {
+    _updateCurrentScreenshot(data.copyWith(screenshotBytes: () => bytes));
+  }
+
+  void setIphoneScreenshotBytes(Uint8List? bytes) {
+    _updateCurrentScreenshot(data.copyWith(iphoneScreenshotBytes: () => bytes));
+  }
+
+  void setSamsungScreenshotBytes(Uint8List? bytes) {
+    _updateCurrentScreenshot(data.copyWith(samsungScreenshotBytes: () => bytes));
+  }
+
+  Future<void> pickIphoneScreenshot() async {
+    final bytes = await FileService.pickImageBytes();
+    if (bytes != null) {
+      setIphoneScreenshotBytes(bytes);
+    }
+  }
+
+  Future<void> pickSamsungScreenshot() async {
+    final bytes = await FileService.pickImageBytes();
+    if (bytes != null) {
+      setSamsungScreenshotBytes(bytes);
+    }
+  }
+
 
   // --- Flow Navigation ---
 
@@ -216,16 +320,8 @@ class EditorViewModel extends ChangeNotifier {
     ));
   }
 
-  void setScreenshotBytes(Uint8List? bytes) {
-    _updateCurrentScreenshot(data.copyWith(screenshotBytes: () => bytes));
-  }
-
   void setDeviceScale(double scale) {
     _updateCurrentScreenshot(data.copyWith(deviceScale: scale));
-  }
-
-  void setDeviceOffsetY(double offsetY) {
-    _updateCurrentScreenshot(data.copyWith(deviceOffsetY: offsetY));
   }
 
   void setDeviceRotation(double degrees) {
