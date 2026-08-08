@@ -20,14 +20,16 @@ class FramePanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Device Model:', style: TextStyle(color: AppColors.textSecondary, fontSize: AppDimensions.fontBody)),
+          const Text(
+            'Device Model:',
+            style: TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: AppDimensions.spacingSm),
           DropdownButtonFormField<DeviceFrameStyle>(
             initialValue: vm.frameStyle,
-            dropdownColor: AppColors.surface,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody),
+            dropdownColor: Colors.white,
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
             decoration: const InputDecoration(
-              border: OutlineInputBorder(),
               isDense: true,
             ),
             items: DeviceFrameStyle.values
@@ -59,12 +61,24 @@ class FramePanel extends StatelessWidget {
             onChanged: (val) => vm.setDeviceRotation(val),
           ),
           const SizedBox(height: AppDimensions.spacingSm),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Drop Shadow', style: TextStyle(color: AppColors.textSecondary, fontSize: AppDimensions.fontBody)),
-            value: vm.hasShadow,
-            activeTrackColor: AppColors.primary,
-            onChanged: (val) => vm.setHasShadow(val),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              border: Border.all(color: AppColors.glassBorder),
+            ),
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                'Drop Shadow',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
+              ),
+              value: vm.hasShadow,
+              activeTrackColor: AppColors.primary,
+              activeThumbColor: Colors.white,
+              onChanged: (val) => vm.setHasShadow(val),
+            ),
           ),
         ],
       ),

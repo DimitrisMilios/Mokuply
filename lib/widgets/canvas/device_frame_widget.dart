@@ -34,13 +34,16 @@ class DeviceFrameWidget extends StatelessWidget {
         height: deviceHeight,
       );
     } else {
-      // Placeholder preview image when no file uploaded yet
+      // Placeholder preview image when no file uploaded yet (light glass aesthetic)
       screenshotWidget = Container(
         width: deviceWidth,
         height: deviceHeight,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+            colors: [
+              Colors.white.withValues(alpha: 0.9),
+              const Color(0xFFF7F2E2).withValues(alpha: 0.9),
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -48,26 +51,35 @@ class DeviceFrameWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add_photo_alternate_rounded,
-              size: 64 * scale,
-              color: Colors.white54,
+            Container(
+              padding: EdgeInsets.all(16 * scale),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 1.5 * scale),
+              ),
+              child: Icon(
+                Icons.add_photo_alternate_rounded,
+                size: 54 * scale,
+                color: AppColors.primary,
+              ),
             ),
             SizedBox(height: 16 * scale),
             Text(
               "Upload App Screenshot",
               style: TextStyle(
-                color: Colors.white70,
+                color: AppColors.textPrimary,
                 fontSize: 20 * scale,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
               ),
             ),
             SizedBox(height: 8 * scale),
             Text(
               "Click upload in left sidebar",
               style: TextStyle(
-                color: Colors.white38,
+                color: AppColors.textMuted,
                 fontSize: 14 * scale,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -79,10 +91,10 @@ class DeviceFrameWidget extends StatelessWidget {
     final List<BoxShadow> shadows = hasShadow
         ? [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.45),
-              blurRadius: 40 * scale,
-              spreadRadius: 10 * scale,
-              offset: Offset(0, 20 * scale),
+              color: AppColors.primary.withValues(alpha: 0.25),
+              blurRadius: 36 * scale,
+              spreadRadius: 6 * scale,
+              offset: Offset(0, 18 * scale),
             ),
           ]
         : [];
@@ -109,6 +121,8 @@ class DeviceFrameWidget extends StatelessWidget {
                 // Dynamic Island notch
                 Positioned(
                   top: 14 * scale,
+                  left: 0,
+                  right: 0,
                   child: Align(
                     alignment: Alignment.topCenter,
                     child: Container(
@@ -174,7 +188,7 @@ class DeviceFrameWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(cornerRadius),
             boxShadow: shadows,
             border: Border.all(
-              color: Colors.white30,
+              color: AppColors.primary.withValues(alpha: 0.5),
               width: 4 * scale,
             ),
           ),

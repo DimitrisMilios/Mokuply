@@ -15,7 +15,7 @@ class MocuplyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Mocuply — Free App Mockup Generator',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.dark(),
+        theme: AppTheme.light(),
         home: const EditorView(),
       ),
     );

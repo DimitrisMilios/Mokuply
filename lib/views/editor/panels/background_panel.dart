@@ -20,7 +20,10 @@ class BackgroundPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Preset Gradients', style: TextStyle(color: AppColors.textSecondary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600)),
+          const Text(
+            'Preset Gradients',
+            style: TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: AppDimensions.spacingSm),
           GridView.builder(
             shrinkWrap: true,
@@ -37,19 +40,33 @@ class BackgroundPanel extends StatelessWidget {
               final isSelected = vm.selectedGradientIndex == index && vm.customBackgroundColor == null;
               return InkWell(
                 onTap: () => vm.setGradientIndex(index),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                 child: Container(
                   decoration: preset.toDecoration().copyWith(
                     borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                     border: Border.all(
-                      color: isSelected ? AppColors.textPrimary : Colors.transparent,
-                      width: 2,
+                      color: isSelected ? AppColors.primary : AppColors.glassBorder,
+                      width: isSelected ? 2.5 : 1,
                     ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Center(
                     child: Text(
                       preset.name,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontXs, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: preset.colors.first.computeLuminance() > 0.5 ? AppColors.textPrimary : Colors.white,
+                        fontSize: AppDimensions.fontXs,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -59,7 +76,10 @@ class BackgroundPanel extends StatelessWidget {
           const SizedBox(height: AppDimensions.spacingLg),
           Row(
             children: [
-              const Text('Custom Solid Color:', style: TextStyle(color: AppColors.textSecondary, fontSize: AppDimensions.fontBody)),
+              const Text(
+                'Custom Solid Color:',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
+              ),
               const Spacer(),
               ColorSwatchButton(
                 color: vm.customBackgroundColor ?? AppColors.surface,

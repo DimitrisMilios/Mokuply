@@ -23,53 +23,66 @@ class TypographyPanel extends StatelessWidget {
           TextField(
             controller: TextEditingController(text: vm.titleText)..selection = TextSelection.collapsed(offset: vm.titleText.length),
             onChanged: (val) => vm.setTitleText(val),
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontMd),
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontMd, fontWeight: FontWeight.w500),
             decoration: const InputDecoration(
               labelText: 'Main Headline',
-              labelStyle: TextStyle(color: AppColors.textMuted),
-              border: OutlineInputBorder(),
-              isDense: true,
+              labelStyle: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w500),
             ),
           ),
           const SizedBox(height: AppDimensions.spacingMd),
           TextField(
             controller: TextEditingController(text: vm.subtitleText)..selection = TextSelection.collapsed(offset: vm.subtitleText.length),
             onChanged: (val) => vm.setSubtitleText(val),
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontMd),
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontMd, fontWeight: FontWeight.w500),
             decoration: const InputDecoration(
               labelText: 'Subtitle',
-              labelStyle: TextStyle(color: AppColors.textMuted),
-              border: OutlineInputBorder(),
-              isDense: true,
+              labelStyle: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w500),
             ),
           ),
           const SizedBox(height: AppDimensions.spacingMd),
           Row(
             children: [
-              const Text('Headline Font:', style: TextStyle(color: AppColors.textSecondary, fontSize: AppDimensions.fontBody)),
+              const Text(
+                'Headline Font:',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
+              ),
               const Spacer(),
-              DropdownButton<String>(
-                value: StoreSpecs.fontFamilies.contains(vm.titleFont) ? vm.titleFont : StoreSpecs.fontFamilies.first,
-                dropdownColor: AppColors.surface,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody),
-                items: StoreSpecs.fontFamilies
-                    .map((f) => DropdownMenuItem(value: f, child: Text(f)))
-                    .toList(),
-                onChanged: (f) {
-                  if (f != null) vm.setTitleFont(f);
-                },
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.65),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                  border: Border.all(color: AppColors.glassBorder),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: StoreSpecs.fontFamilies.contains(vm.titleFont) ? vm.titleFont : StoreSpecs.fontFamilies.first,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
+                    icon: const Icon(Icons.arrow_drop_down_rounded, color: AppColors.primary),
+                    items: StoreSpecs.fontFamilies
+                        .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                        .toList(),
+                    onChanged: (f) {
+                      if (f != null) vm.setTitleFont(f);
+                    },
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: AppDimensions.spacingSm),
+          const SizedBox(height: AppDimensions.spacingMd),
           Row(
             children: [
-              const Text('Title Color:', style: TextStyle(color: AppColors.textSecondary, fontSize: AppDimensions.fontBody)),
+              const Text(
+                'Title Color:',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
+              ),
               const Spacer(),
               ColorSwatchButton(
                 color: vm.textColor,
                 onColorChanged: (c) => vm.setTextColor(c),
-                size: 28,
+                size: 32,
               ),
             ],
           ),

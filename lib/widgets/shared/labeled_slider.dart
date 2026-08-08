@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 
-/// Slider with a label and formatted value display.
+/// Slider with high-contrast label and value display for light glass theme.
 class LabeledSlider extends StatelessWidget {
   final String label;
   final String valueText;
@@ -29,16 +29,45 @@ class LabeledSlider extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: AppDimensions.fontBody)),
-            Text(valueText, style: const TextStyle(color: Colors.white38, fontSize: AppDimensions.fontBody)),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: AppDimensions.fontBody,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              ),
+              child: Text(
+                valueText,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: AppDimensions.fontSm,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ],
         ),
-        Slider(
-          value: value,
-          min: min,
-          max: max,
-          activeColor: AppColors.primary,
-          onChanged: onChanged,
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: AppColors.primary,
+            inactiveTrackColor: AppColors.primary.withValues(alpha: 0.15),
+            thumbColor: AppColors.primary,
+            overlayColor: AppColors.primary.withValues(alpha: 0.1),
+            trackHeight: 5,
+          ),
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            onChanged: onChanged,
+          ),
         ),
       ],
     );

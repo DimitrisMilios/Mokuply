@@ -21,29 +21,37 @@ class LayoutPanel extends StatelessWidget {
           final isSelected = vm.layoutMode == mode;
           return Container(
             margin: const EdgeInsets.only(bottom: AppDimensions.spacingSm),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd, vertical: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                side: BorderSide(
-                  color: isSelected ? AppColors.primary : AppColors.surfaceBorder,
-                  width: isSelected ? 2 : 1,
+            child: Material(
+              color: Colors.transparent,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd, vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                  side: BorderSide(
+                    color: isSelected ? AppColors.primary : AppColors.glassBorder,
+                    width: isSelected ? 2 : 1,
+                  ),
                 ),
-              ),
-              tileColor: isSelected ? AppColors.surfaceSelected : AppColors.surface,
-              title: Text(
-                mode.title,
-                style: TextStyle(
-                  color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: AppDimensions.fontMd,
+                tileColor: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.12)
+                    : Colors.white.withValues(alpha: 0.5),
+                title: Text(
+                  mode.title,
+                  style: TextStyle(
+                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    fontSize: AppDimensions.fontMd,
+                  ),
                 ),
+                subtitle: Text(
+                  mode.description,
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: AppDimensions.fontSm),
+                ),
+                trailing: isSelected
+                    ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20)
+                    : null,
+                onTap: () => vm.setLayoutMode(mode),
               ),
-              subtitle: Text(
-                mode.description,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: AppDimensions.fontSm),
-              ),
-              onTap: () => vm.setLayoutMode(mode),
             ),
           );
         }).toList(),
