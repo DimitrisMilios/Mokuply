@@ -151,7 +151,7 @@ class _RealisticIPhone16ProMaxFrame extends StatelessWidget {
     final double displayBezelThickness = 16 * scale;  // Bold, thick black screen bezel
     final double totalFramePadding = titaniumFrameThickness + displayBezelThickness;
     final double innerCornerRadius = outerCornerRadius - (totalFramePadding * 0.7);
-    final double buttonWidth = 14.0 * scale; // Extra large, prominent side hardware buttons
+    final double buttonWidth = 8.0 * scale; // Extra large, prominent side hardware buttons
 
     // Realistic multi-layered drop shadow
     final List<BoxShadow> shadows = hasShadow
@@ -458,11 +458,11 @@ class _RealisticSamsungS26UltraFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Signature Ultra sharp corners
-    final double outerCornerRadius = 6 * scale;
-    final double titaniumFrameThickness = 8 * scale;
-    final double displayBezelThickness = 10 * scale;
-    final double innerCornerRadius = 8 * scale;
-    final double buttonWidth = 7.0 * scale; // Prominent side buttons
+    final double outerCornerRadius = 70 * scale;
+    final double titaniumFrameThickness = 10 * scale;
+    final double displayBezelThickness = 12 * scale;
+    final double innerCornerRadius = 50 * scale;
+    final double buttonWidth = 10.0 * scale; // Prominent side buttons
 
     final List<BoxShadow> shadows = hasShadow
         ? [
@@ -492,20 +492,20 @@ class _RealisticSamsungS26UltraFrame extends StatelessWidget {
           // Volume Rocker (Upper Right)
           Positioned(
             right: 0,
-            top: 155 * scale,
+            top: 200 * scale,
             child: _buildSideButton(
               width: buttonWidth,
-              height: 72 * scale,
+              height: 250 * scale,
               gradientColors: const [Color(0xFFF3EDE2), Color(0xFFC4BBB0), Color(0xFFD6CFC3)],
             ),
           ),
           // Power Key (Lower Right)
           Positioned(
             right: 0,
-            top: 245 * scale,
+            top: 530 * scale,
             child: _buildSideButton(
               width: buttonWidth,
-              height: 50 * scale,
+              height: 125 * scale,
               gradientColors: const [Color(0xFFF3EDE2), Color(0xFFC4BBB0), Color(0xFFD6CFC3)],
             ),
           ),
@@ -556,13 +556,13 @@ class _RealisticSamsungS26UltraFrame extends StatelessWidget {
 
                                 // 4. INFINITY-O HOLE-PUNCH CAMERA (Larger Precision Multi-Ring Optical Lens)
                                 Positioned(
-                                  top: 13 * scale,
+                                  top: 30 * scale,
                                   left: 0,
                                   right: 0,
                                   child: Center(
                                     child: Container(
-                                      width: 21 * scale,
-                                      height: 21 * scale,
+                                      width: 36 * scale,
+                                      height: 36 * scale,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: Colors.black,
