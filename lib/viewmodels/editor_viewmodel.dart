@@ -1,207 +1,290 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/constants/store_specs.dart';
+import '../models/project_template.dart';
 import '../models/template_data.dart';
 import '../services/export_service.dart';
 import '../services/file_service.dart';
 import '../widgets/canvas/canvas_mockup_widget.dart';
 
-/// Editor ViewModel — owns template state and orchestrates business logic.
+/// Editor ViewModel — manages multi-screenshot project sets and app flow.
 class EditorViewModel extends ChangeNotifier {
-  TemplateData _data = const TemplateData();
+  bool _isHomeScreen = true;
+  ProjectTemplate? _activeTemplate;
+  List<TemplateData> _screenshots = ProjectTemplate.saasModern().initialScreenshots;
+  int _selectedIndex = 0;
   bool _isExporting = false;
+  int _exportingProgressIndex = 0;
 
-  // Core accessors
-  TemplateData get data => _data;
+  // Flow & State Accessors
+  bool get isHomeScreen => _isHomeScreen;
+  ProjectTemplate? get activeTemplate => _activeTemplate;
+  List<TemplateData> get screenshots => List.unmodifiable(_screenshots);
+  int get selectedIndex => _selectedIndex;
+  int get screenshotsCount => _screenshots.length;
   bool get isExporting => _isExporting;
+  int get exportingProgressIndex => _exportingProgressIndex;
 
-  // Convenience getters (delegate to _data)
-  TargetPlatformType get platform => _data.platform;
-  LayoutMode get layoutMode => _data.layoutMode;
-  DeviceFrameStyle get frameStyle => _data.frameStyle;
-  String get titleText => _data.titleText;
-  String get subtitleText => _data.subtitleText;
-  String get titleFont => _data.titleFont;
-  String get subtitleFont => _data.subtitleFont;
-  double get titleSize => _data.titleSize;
-  double get subtitleSize => _data.subtitleSize;
-  Color get textColor => _data.textColor;
-  Color get subtitleColor => _data.subtitleColor;
-  int get selectedGradientIndex => _data.selectedGradientIndex;
-  Color? get customBackgroundColor => _data.customBackgroundColor;
-  List<Color>? get customGradientColors => _data.customGradientColors;
-  Uint8List? get screenshotBytes => _data.screenshotBytes;
-  double get deviceScale => _data.deviceScale;
-  double get deviceOffsetY => _data.deviceOffsetY;
-  double get deviceRotation => _data.deviceRotation;
-  bool get hasShadow => _data.hasShadow;
+  /// Gets currently active screenshot item
+  TemplateData get data => _screenshots[_selectedIndex.clamp(0, _screenshots.length - 1)];
 
-  /// Computed background decoration from current state.
+  // Convenience getters delegating to active screenshot item
+  TargetPlatformType get platform => data.platform;
+  LayoutMode get layoutMode => data.layoutMode;
+  DeviceFrameStyle get frameStyle => data.frameStyle;
+  String get titleText => data.titleText;
+  String get subtitleText => data.subtitleText;
+  String get titleFont => data.titleFont;
+  String get subtitleFont => data.subtitleFont;
+  double get titleSize => data.titleSize;
+  double get subtitleSize => data.subtitleSize;
+  Color get textColor => data.textColor;
+  Color get subtitleColor => data.subtitleColor;
+  int get selectedGradientIndex => data.selectedGradientIndex;
+  Color? get customBackgroundColor => data.customBackgroundColor;
+  List<Color>? get customGradientColors => data.customGradientColors;
+  Uint8List? get screenshotBytes => data.screenshotBytes;
+  double get deviceScale => data.deviceScale;
+  double get deviceOffsetY => data.deviceOffsetY;
+  double get deviceRotation => data.deviceRotation;
+  bool get hasShadow => data.hasShadow;
+
+  /// Computed background decoration for current screenshot
   BoxDecoration get backgroundDecoration {
-    if (_data.customBackgroundColor != null) {
-      return BoxDecoration(color: _data.customBackgroundColor);
+    final currentData = data;
+    if (currentData.customBackgroundColor != null) {
+      return BoxDecoration(color: currentData.customBackgroundColor);
     }
-    if (_data.customGradientColors != null && _data.customGradientColors!.length >= 2) {
+    if (currentData.customGradientColors != null && currentData.customGradientColors!.length >= 2) {
       return BoxDecoration(
         gradient: LinearGradient(
-          colors: _data.customGradientColors!,
+          colors: currentData.customGradientColors!,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       );
     }
     return StoreSpecs.gradientPresets[
-      _data.selectedGradientIndex % StoreSpecs.gradientPresets.length
+      currentData.selectedGradientIndex % StoreSpecs.gradientPresets.length
     ].toDecoration();
   }
 
-  // --- Setters ---
+  // --- Flow Navigation ---
 
-  void setPlatform(TargetPlatformType platform) {
-    _data = _data.copyWith(
-      platform: platform,
-      frameStyle: platform == TargetPlatformType.googlePlay
-          ? DeviceFrameStyle.samsungS26Ultra
-          : DeviceFrameStyle.iphone16ProMax,
-    );
+  void openEditorWithTemplate(ProjectTemplate template) {
+    _activeTemplate = template;
+    _screenshots = List.from(template.initialScreenshots);
+    _selectedIndex = 0;
+    _isHomeScreen = false;
     notifyListeners();
   }
 
-  void setLayoutMode(LayoutMode mode) {
-    _data = _data.copyWith(layoutMode: mode);
+  void openEditorWithNewProject() {
+    _activeTemplate = ProjectTemplate.saasModern();
+    _screenshots = List.from(_activeTemplate!.initialScreenshots);
+    _selectedIndex = 0;
+    _isHomeScreen = false;
     notifyListeners();
   }
 
-  void setFrameStyle(DeviceFrameStyle style) {
-    _data = _data.copyWith(frameStyle: style);
+  void goBackToHome() {
+    _isHomeScreen = true;
     notifyListeners();
   }
 
-  void setTitleText(String text) {
-    _data = _data.copyWith(titleText: text);
-    notifyListeners();
-  }
+  // --- Multi-Screenshot Actions ---
 
-  void setSubtitleText(String text) {
-    _data = _data.copyWith(subtitleText: text);
-    notifyListeners();
-  }
-
-  void setTitleFont(String font) {
-    _data = _data.copyWith(titleFont: font);
-    notifyListeners();
-  }
-
-  void setSubtitleFont(String font) {
-    _data = _data.copyWith(subtitleFont: font);
-    notifyListeners();
-  }
-
-  void setTitleSize(double size) {
-    _data = _data.copyWith(titleSize: size);
-    notifyListeners();
-  }
-
-  void setSubtitleSize(double size) {
-    _data = _data.copyWith(subtitleSize: size);
-    notifyListeners();
-  }
-
-  void setTextColor(Color color) {
-    _data = _data.copyWith(textColor: color);
-    notifyListeners();
-  }
-
-  void setSubtitleColor(Color color) {
-    _data = _data.copyWith(subtitleColor: color);
-    notifyListeners();
-  }
-
-  void setGradientIndex(int index) {
-    _data = _data.copyWith(
-      selectedGradientIndex: index,
-      customBackgroundColor: () => null,
-      customGradientColors: () => null,
-    );
-    notifyListeners();
-  }
-
-  void setCustomBackgroundColor(Color color) {
-    _data = _data.copyWith(
-      customBackgroundColor: () => color,
-      customGradientColors: () => null,
-    );
-    notifyListeners();
-  }
-
-  void setCustomGradientColors(List<Color> colors) {
-    _data = _data.copyWith(
-      customGradientColors: () => colors,
-      customBackgroundColor: () => null,
-    );
-    notifyListeners();
-  }
-
-  void setScreenshotBytes(Uint8List? bytes) {
-    _data = _data.copyWith(screenshotBytes: () => bytes);
-    notifyListeners();
-  }
-
-  void setDeviceScale(double scale) {
-    _data = _data.copyWith(deviceScale: scale);
-    notifyListeners();
-  }
-
-  void setDeviceOffsetY(double offsetY) {
-    _data = _data.copyWith(deviceOffsetY: offsetY);
-    notifyListeners();
-  }
-
-  void setDeviceRotation(double degrees) {
-    _data = _data.copyWith(deviceRotation: degrees);
-    notifyListeners();
-  }
-
-  void setHasShadow(bool shadow) {
-    _data = _data.copyWith(hasShadow: shadow);
-    notifyListeners();
-  }
-
-  void resetToDefaults() {
-    _data = const TemplateData();
-    notifyListeners();
-  }
-
-  /// Pick an image file from the local filesystem (browser memory only).
-  Future<void> pickScreenshot() async {
-    final bytes = await FileService.pickImageBytes();
-    if (bytes != null) {
-      _data = _data.copyWith(screenshotBytes: () => bytes);
+  void selectScreenshot(int index) {
+    if (index >= 0 && index < _screenshots.length) {
+      _selectedIndex = index;
       notifyListeners();
     }
   }
 
-  /// Export the current mockup as a high-resolution PNG.
-  /// Throws on failure.
-  Future<void> exportMockup() async {
-    _isExporting = true;
+  void addScreenshot() {
+    final newCard = TemplateData(
+      platform: platform,
+      frameStyle: frameStyle,
+      titleText: 'New Screenshot ${_screenshots.length + 1}',
+      subtitleText: 'Customize headlines and layout',
+      selectedGradientIndex: _screenshots.length % StoreSpecs.gradientPresets.length,
+    );
+    _screenshots.add(newCard);
+    _selectedIndex = _screenshots.length - 1;
     notifyListeners();
+  }
+
+  void removeScreenshot(int index) {
+    if (_screenshots.length <= 1) return; // Keep at least 1 screenshot
+    _screenshots.removeAt(index);
+    if (_selectedIndex >= _screenshots.length) {
+      _selectedIndex = _screenshots.length - 1;
+    }
+    notifyListeners();
+  }
+
+  void duplicateScreenshot(int index) {
+    if (index >= 0 && index < _screenshots.length) {
+      final copy = _screenshots[index].copyWith(
+        titleText: '${_screenshots[index].titleText} (Copy)',
+      );
+      _screenshots.insert(index + 1, copy);
+      _selectedIndex = index + 1;
+      notifyListeners();
+    }
+  }
+
+  // --- Mutators for Currently Selected Screenshot ---
+
+  void _updateCurrentScreenshot(TemplateData updated) {
+    _screenshots[_selectedIndex] = updated;
+    notifyListeners();
+  }
+
+  void setPlatform(TargetPlatformType newPlatform) {
+    // Update platform across ALL screenshots in project for target store consistency
+    _screenshots = _screenshots.map((s) {
+      return s.copyWith(
+        platform: newPlatform,
+        frameStyle: newPlatform == TargetPlatformType.googlePlay
+            ? DeviceFrameStyle.samsungS26Ultra
+            : DeviceFrameStyle.iphone16ProMax,
+      );
+    }).toList();
+    notifyListeners();
+  }
+
+  void setLayoutMode(LayoutMode mode) {
+    _updateCurrentScreenshot(data.copyWith(layoutMode: mode));
+  }
+
+  void setFrameStyle(DeviceFrameStyle style) {
+    _updateCurrentScreenshot(data.copyWith(frameStyle: style));
+  }
+
+  void setTitleText(String text) {
+    _updateCurrentScreenshot(data.copyWith(titleText: text));
+  }
+
+  void setSubtitleText(String text) {
+    _updateCurrentScreenshot(data.copyWith(subtitleText: text));
+  }
+
+  void setTitleFont(String font) {
+    _updateCurrentScreenshot(data.copyWith(titleFont: font));
+  }
+
+  void setSubtitleFont(String font) {
+    _updateCurrentScreenshot(data.copyWith(subtitleFont: font));
+  }
+
+  void setTitleSize(double size) {
+    _updateCurrentScreenshot(data.copyWith(titleSize: size));
+  }
+
+  void setSubtitleSize(double size) {
+    _updateCurrentScreenshot(data.copyWith(subtitleSize: size));
+  }
+
+  void setTextColor(Color color) {
+    _updateCurrentScreenshot(data.copyWith(textColor: color));
+  }
+
+  void setSubtitleColor(Color color) {
+    _updateCurrentScreenshot(data.copyWith(subtitleColor: color));
+  }
+
+  void setGradientIndex(int index) {
+    _updateCurrentScreenshot(data.copyWith(
+      selectedGradientIndex: index,
+      customBackgroundColor: () => null,
+      customGradientColors: () => null,
+    ));
+  }
+
+  void setCustomBackgroundColor(Color color) {
+    _updateCurrentScreenshot(data.copyWith(
+      customBackgroundColor: () => color,
+      customGradientColors: () => null,
+    ));
+  }
+
+  void setCustomGradientColors(List<Color> colors) {
+    _updateCurrentScreenshot(data.copyWith(
+      customGradientColors: () => colors,
+      customBackgroundColor: () => null,
+    ));
+  }
+
+  void setScreenshotBytes(Uint8List? bytes) {
+    _updateCurrentScreenshot(data.copyWith(screenshotBytes: () => bytes));
+  }
+
+  void setDeviceScale(double scale) {
+    _updateCurrentScreenshot(data.copyWith(deviceScale: scale));
+  }
+
+  void setDeviceOffsetY(double offsetY) {
+    _updateCurrentScreenshot(data.copyWith(deviceOffsetY: offsetY));
+  }
+
+  void setDeviceRotation(double degrees) {
+    _updateCurrentScreenshot(data.copyWith(deviceRotation: degrees));
+  }
+
+  void setHasShadow(bool shadow) {
+    _updateCurrentScreenshot(data.copyWith(hasShadow: shadow));
+  }
+
+  void resetToDefaults() {
+    _screenshots = ProjectTemplate.saasModern().initialScreenshots;
+    _selectedIndex = 0;
+    notifyListeners();
+  }
+
+  /// Pick an image file for currently selected screenshot
+  Future<void> pickScreenshot() async {
+    final bytes = await FileService.pickImageBytes();
+    if (bytes != null) {
+      setScreenshotBytes(bytes);
+    }
+  }
+
+  /// Sequential High-Res PNG Batch Download for ALL screenshots in project.
+  Future<void> exportAllScreenshots() async {
+    _isExporting = true;
+    _exportingProgressIndex = 0;
+    notifyListeners();
+
     try {
       final targetSize = Size(platform.targetWidth, platform.targetHeight);
-      final widget = CanvasMockupWidget(
-        data: _data,
-        canvasSize: targetSize,
-        isExporting: true,
-      );
-      final pngBytes = await ExportService.captureHighResWidget(
-        widget: widget,
-        targetSize: targetSize,
-      );
-      final filename =
-          '${platform.platformName.toLowerCase().replaceAll(' ', '_')}_mockup_${DateTime.now().millisecondsSinceEpoch}.png';
-      ExportService.downloadPngWeb(pngBytes: pngBytes, filename: filename);
+      final platformTag = platform.platformName.toLowerCase().replaceAll(' ', '_');
+
+      for (int i = 0; i < _screenshots.length; i++) {
+        _exportingProgressIndex = i + 1;
+        notifyListeners();
+
+        final itemData = _screenshots[i];
+        final widget = CanvasMockupWidget(
+          data: itemData,
+          canvasSize: targetSize,
+          isExporting: true,
+        );
+
+        final pngBytes = await ExportService.captureHighResWidget(
+          widget: widget,
+          targetSize: targetSize,
+        );
+
+        final filename = '${platformTag}_mockup_screen_${i + 1}_of_${_screenshots.length}.png';
+        ExportService.downloadPngWeb(pngBytes: pngBytes, filename: filename);
+
+        // Small pause between browser download triggers
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
     } finally {
       _isExporting = false;
+      _exportingProgressIndex = 0;
       notifyListeners();
     }
   }

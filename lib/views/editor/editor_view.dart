@@ -24,7 +24,7 @@ class EditorView extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Background ambient gradient glowing orbs for glass reflection
+          // Background ambient glowing reflections for glass background
           Positioned(
             top: -100,
             left: -100,
@@ -62,31 +62,36 @@ class EditorView extends StatelessWidget {
             ),
           ),
 
-          // Main Content Layout
+          // Main Layout
           Column(
             children: [
               _buildNavbar(context, vm),
               Expanded(
                 child: Row(
                   children: [
+                    // Left Customization Sidebar
                     SizedBox(
                       width: AppDimensions.sidebarWidth,
                       child: ListView(
                         padding: const EdgeInsets.all(AppDimensions.spacingXxl),
-                        children: const [
-                          ScreenshotPanel(),
-                          SizedBox(height: AppDimensions.spacingLg),
-                          LayoutPanel(),
-                          SizedBox(height: AppDimensions.spacingLg),
-                          BackgroundPanel(),
-                          SizedBox(height: AppDimensions.spacingLg),
-                          TypographyPanel(),
-                          SizedBox(height: AppDimensions.spacingLg),
-                          FramePanel(),
+                        children: [
+                          _buildActiveCardHeader(context, vm),
+                          const SizedBox(height: AppDimensions.spacingLg),
+                          const ScreenshotPanel(),
+                          const SizedBox(height: AppDimensions.spacingLg),
+                          const LayoutPanel(),
+                          const SizedBox(height: AppDimensions.spacingLg),
+                          const BackgroundPanel(),
+                          const SizedBox(height: AppDimensions.spacingLg),
+                          const TypographyPanel(),
+                          const SizedBox(height: AppDimensions.spacingLg),
+                          const FramePanel(),
                         ],
                       ),
                     ),
                     Container(width: 1, color: AppColors.glassBorder),
+
+                    // Center Multi-Screenshot Workspace
                     Expanded(
                       child: _buildCanvasWorkspace(context, vm),
                     ),
@@ -95,6 +100,47 @@ class EditorView extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveCardHeader(BuildContext context, EditorViewModel vm) {
+    return GlassContainer(
+      opacity: 0.8,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+      borderColor: AppColors.primary.withValues(alpha: 0.3),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            ),
+            child: Text(
+              'Screen #${vm.selectedIndex + 1}',
+              style: const TextStyle(color: AppColors.textOnPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            'Editing Active Card',
+            style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: () => vm.duplicateScreenshot(vm.selectedIndex),
+            tooltip: 'Duplicate Screen',
+            icon: const Icon(Icons.copy_rounded, size: 18, color: AppColors.textSecondary),
+          ),
+          if (vm.screenshotsCount > 1)
+            IconButton(
+              onPressed: () => vm.removeScreenshot(vm.selectedIndex),
+              tooltip: 'Delete Screen',
+              icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+            ),
         ],
       ),
     );
@@ -113,22 +159,21 @@ class EditorView extends StatelessWidget {
           children: [
             Row(
               children: [
+                IconButton(
+                  onPressed: () => vm.goBackToHome(),
+                  tooltip: 'Back to Store Templates',
+                  icon: const Icon(Icons.arrow_back_rounded, color: AppColors.primary),
+                ),
+                const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [AppColors.primary, AppColors.secondary],
                     ),
                     borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
-                  child: const Icon(Icons.art_track_rounded, color: AppColors.textOnPrimary, size: 22),
+                  child: const Icon(Icons.art_track_rounded, color: AppColors.textOnPrimary, size: 20),
                 ),
                 const SizedBox(width: AppDimensions.spacingMd),
                 const Text(
@@ -142,15 +187,15 @@ class EditorView extends StatelessWidget {
                 ),
                 const SizedBox(width: AppDimensions.spacingMd),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.badgeBg,
                     borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
                     border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   ),
-                  child: const Text(
-                    '100% Free & Client-Side',
-                    style: TextStyle(color: AppColors.primary, fontSize: AppDimensions.fontSm, fontWeight: FontWeight.bold),
+                  child: Text(
+                    '${vm.screenshotsCount} Screenshots Set',
+                    style: const TextStyle(color: AppColors.primary, fontSize: AppDimensions.fontSm, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -192,41 +237,33 @@ class EditorView extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppDimensions.spacingLg),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                border: Border.all(color: AppColors.glassBorder),
-              ),
-              child: Text(
-                '${vm.platform.targetWidth.toInt()} x ${vm.platform.targetHeight.toInt()} px',
-                style: const TextStyle(color: AppColors.textMuted, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
-              ),
-            ),
-            const SizedBox(width: AppDimensions.spacingLg),
             TextButton.icon(
               onPressed: () => vm.resetToDefaults(),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.textPrimary,
               ),
               icon: const Icon(Icons.refresh_rounded, size: 18, color: AppColors.textPrimary),
-              label: const Text('Reset', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+              label: const Text('Reset Set', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
             ),
             const SizedBox(width: AppDimensions.spacingLg),
+
+            // Batch Export Button
             ElevatedButton.icon(
               onPressed: vm.isExporting ? null : () async {
                 try {
-                  await vm.exportMockup();
+                  await vm.exportAllScreenshots();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                      SnackBar(
                         backgroundColor: AppColors.primary,
                         content: Row(
                           children: [
-                            Icon(Icons.check_circle_rounded, color: AppColors.textOnPrimary),
-                            SizedBox(width: 12),
-                            Text('Successfully exported mockup!', style: TextStyle(color: AppColors.textOnPrimary, fontWeight: FontWeight.bold)),
+                            const Icon(Icons.check_circle_rounded, color: AppColors.textOnPrimary),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Exported all ${vm.screenshotsCount} high-res store PNGs!',
+                              style: const TextStyle(color: AppColors.textOnPrimary, fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
                       ),
@@ -259,7 +296,9 @@ class EditorView extends StatelessWidget {
                     )
                   : const Icon(Icons.download_rounded, size: 20),
               label: Text(
-                vm.isExporting ? 'Exporting...' : 'Export High-Res PNG',
+                vm.isExporting
+                    ? 'Exporting ${vm.exportingProgressIndex}/${vm.screenshotsCount}...'
+                    : 'Download All (${vm.screenshotsCount}) PNGs',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppDimensions.fontLg),
               ),
             ),
@@ -272,65 +311,147 @@ class EditorView extends StatelessWidget {
   Widget _buildCanvasWorkspace(BuildContext context, EditorViewModel vm) {
     return LayoutBuilder(
       builder: (ctx, constraints) {
-        final double maxAvailableWidth = constraints.maxWidth - 80;
-        final double maxAvailableHeight = constraints.maxHeight - 80;
-
+        final double maxCardHeight = constraints.maxHeight - 140;
         final double targetRatio = vm.platform.aspectRatio;
 
-        double previewWidth = maxAvailableWidth;
-        double previewHeight = previewWidth / targetRatio;
-
-        if (previewHeight > maxAvailableHeight) {
-          previewHeight = maxAvailableHeight;
-          previewWidth = previewHeight * targetRatio;
-        }
+        double previewHeight = maxCardHeight;
+        double previewWidth = previewHeight * targetRatio;
 
         return Container(
           color: AppColors.canvasViewport,
           child: Stack(
-            alignment: Alignment.center,
             children: [
               Positioned.fill(
                 child: CustomPaint(
                   painter: CanvasGridPainter(),
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.25),
-                      blurRadius: 36,
-                      spreadRadius: 4,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-                  child: CanvasMockupWidget(
-                    data: vm.data,
-                    canvasSize: Size(previewWidth, previewHeight),
+
+              // Multi-Screenshot Horizontal Side-by-Side Viewport
+              Center(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(vm.screenshotsCount, (index) {
+                      final itemData = vm.screenshots[index];
+                      final isSelected = vm.selectedIndex == index;
+
+                      return GestureDetector(
+                        onTap: () => vm.selectScreenshot(index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+                            border: Border.all(
+                              color: isSelected ? AppColors.primary : Colors.transparent,
+                              width: isSelected ? 4 : 0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isSelected
+                                    ? AppColors.primary.withValues(alpha: 0.4)
+                                    : AppColors.primary.withValues(alpha: 0.15),
+                                blurRadius: isSelected ? 32 : 16,
+                                spreadRadius: isSelected ? 4 : 0,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(AppDimensions.radiusLg - 2),
+                                child: CanvasMockupWidget(
+                                  data: itemData,
+                                  canvasSize: Size(previewWidth, previewHeight),
+                                ),
+                              ),
+
+                              // Screen Index Badge Overlay
+                              Positioned(
+                                top: 12,
+                                left: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? AppColors.primary : Colors.black.withValues(alpha: 0.6),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Screen #${index + 1}',
+                                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ),
               ),
+
+              // Bottom Screenshot Reel Switcher & Add Button Bar
               Positioned(
-                bottom: 20,
-                child: GlassContainer(
-                  opacity: 0.85,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
-                  padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingLg, vertical: AppDimensions.spacingSm),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.aspect_ratio_rounded, color: AppColors.primary, size: 16),
-                      const SizedBox(width: AppDimensions.spacingSm),
-                      Text(
-                        'Live View (${previewWidth.toInt()}x${previewHeight.toInt()} px)  •  Export Target: ${vm.platform.targetWidth.toInt()}x${vm.platform.targetHeight.toInt()} px',
-                        style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                bottom: 16,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: GlassContainer(
+                    opacity: 0.85,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.photo_library_rounded, color: AppColors.primary, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Screenshots Set (${vm.screenshotsCount}):',
+                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 12),
+                        ...List.generate(vm.screenshotsCount, (index) {
+                          final isSelected = vm.selectedIndex == index;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: InkWell(
+                              onTap: () => vm.selectScreenshot(index),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: isSelected ? AppColors.primary : AppColors.glassBorder),
+                                ),
+                                child: Text(
+                                  '#${index + 1}',
+                                  style: TextStyle(
+                                    color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(width: 6),
+                        IconButton(
+                          onPressed: () => vm.addScreenshot(),
+                          tooltip: 'Add Screenshot to Set',
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                          ),
+                          icon: const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
