@@ -5,6 +5,7 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/store_specs.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/glass_container.dart';
+import 'export_modal_dialog.dart';
 
 /// Top header navigation bar for EditorView (Floating Glass Bar).
 class EditorNavbar extends StatelessWidget {
@@ -80,12 +81,12 @@ class EditorNavbar extends StatelessWidget {
             segments: const [
               ButtonSegment(
                 value: TargetPlatformType.appStore,
-                label: Text('iPhone 16 Pro Max'),
+                label: Text('Apple App Store'),
                 icon: Icon(Icons.apple, size: 18),
               ),
               ButtonSegment(
                 value: TargetPlatformType.googlePlay,
-                label: Text('Samsung S26 Ultra'),
+                label: Text('Google Play Store'),
                 icon: Icon(Icons.android, size: 18),
               ),
             ],
@@ -124,37 +125,7 @@ class EditorNavbar extends StatelessWidget {
 
           // Batch Export Button
           ElevatedButton.icon(
-            onPressed: vm.isExporting ? null : () async {
-              try {
-                await vm.exportAllScreenshots();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: AppColors.primary,
-                      content: Row(
-                        children: [
-                          const Icon(Icons.check_circle_rounded, color: AppColors.textOnPrimary),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Exported all ${vm.screenshotsCount} high-res store PNGs!',
-                            style: const TextStyle(color: AppColors.textOnPrimary, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: AppColors.error,
-                      content: Text('Export failed: $e'),
-                    ),
-                  );
-                }
-              }
-            },
+            onPressed: vm.isExporting ? null : () => ExportModalDialog.show(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.textOnPrimary,

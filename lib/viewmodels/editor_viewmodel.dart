@@ -443,8 +443,145 @@ class EditorViewModel extends ChangeNotifier {
     }
   }
 
-  /// Sequential High-Res PNG Batch Download for ALL screenshots in project.
-  Future<void> exportAllScreenshots() async {
+  DeviceFrameStyle _resolveFrameStyleForTargetPlatform(DeviceFrameStyle currentStyle, TargetPlatformType targetPlatform) {
+    if (currentStyle == DeviceFrameStyle.minimalOutline || currentStyle == DeviceFrameStyle.none) {
+      return currentStyle;
+    }
+    return targetPlatform == TargetPlatformType.googlePlay
+        ? DeviceFrameStyle.samsungS26Ultra
+        : DeviceFrameStyle.iphone16ProMax;
+  }
+
+  /// Exports a single store platform package (Apple App Store or Google Play Store) as a high-res ZIP bundle.
+  Future<void> exportPlatformPack(TargetPlatformType targetPlatform, {required BuildContext context}) async {
+    _isExporting = true;
+    _exportingProgressIndex = 0;
+    notifyListeners();
+
+    try {
+      final Size targetSize = Size(targetPlatform.targetWidth, targetPlatform.targetHeight);
+      final String folderName = targetPlatform == TargetPlatformType.appStore
+          ? 'Apple_App_Store_1320x2868'
+          : 'Google_Play_Store_1440x2560';
+
+      final Map<String, Uint8List> zipFiles = {};
+
+      for (int i = 0; i < _screenshots.length; i++) {
+        _exportingProgressIndex = i + 1;
+        notifyListeners();
+
+        final targetFrameStyle = _resolveFrameStyleForTargetPlatform(_screenshots[i].frameStyle, targetPlatform);
+        final itemData = _screenshots[i].copyWith(
+          platform: targetPlatform,
+          frameStyle: targetFrameStyle,
+        );
+        final widget = CanvasMockupWidget(
+          data: itemData,
+          canvasSize: targetSize,
+          isExporting: true,
+        );
+
+        final pngBytes = await ExportService.captureHighResWidget(
+          widget: widget,
+          targetSize: targetSize,
+          context: context,
+        );
+
+        final filename = '$folderName/Screen_${i + 1}.png';
+        zipFiles[filename] = pngBytes;
+      }
+
+      final zipBytes = ExportService.createZipArchive(zipFiles);
+      final zipFilename = 'Mokuply_$folderName.zip';
+      ExportService.downloadFileWeb(
+        bytes: zipBytes,
+        filename: zipFilename,
+        mimeType: 'application/zip',
+      );
+    } finally {
+      _isExporting = false;
+      _exportingProgressIndex = 0;
+      notifyListeners();
+    }
+  }
+
+  /// Exports BOTH store platform packages (Apple 1320x2868 + Google 1440x2560) in a master ZIP bundle.
+  Future<void> exportBothPlatformsPack({required BuildContext context}) async {
+    _isExporting = true;
+    _exportingProgressIndex = 0;
+    notifyListeners();
+
+    try {
+      final Map<String, Uint8List> zipFiles = {};
+
+      // 1. Apple App Store Screens (1320 x 2868)
+      final appleSize = Size(TargetPlatformType.appStore.targetWidth, TargetPlatformType.appStore.targetHeight);
+      for (int i = 0; i < _screenshots.length; i++) {
+        _exportingProgressIndex = i + 1;
+        notifyListeners();
+
+        final appleFrameStyle = _resolveFrameStyleForTargetPlatform(_screenshots[i].frameStyle, TargetPlatformType.appStore);
+        final itemData = _screenshots[i].copyWith(
+          platform: TargetPlatformType.appStore,
+          frameStyle: appleFrameStyle,
+        );
+        final widget = CanvasMockupWidget(
+          data: itemData,
+          canvasSize: appleSize,
+          isExporting: true,
+        );
+
+        final pngBytes = await ExportService.captureHighResWidget(
+          widget: widget,
+          targetSize: appleSize,
+          context: context,
+        );
+
+        zipFiles['Apple_App_Store_1320x2868/Screen_${i + 1}.png'] = pngBytes;
+      }
+
+      // 2. Google Play Store Screens (1440 x 2560)
+      final googleSize = Size(TargetPlatformType.googlePlay.targetWidth, TargetPlatformType.googlePlay.targetHeight);
+      for (int i = 0; i < _screenshots.length; i++) {
+        _exportingProgressIndex = _screenshots.length + i + 1;
+        notifyListeners();
+
+        final googleFrameStyle = _resolveFrameStyleForTargetPlatform(_screenshots[i].frameStyle, TargetPlatformType.googlePlay);
+        final itemData = _screenshots[i].copyWith(
+          platform: TargetPlatformType.googlePlay,
+          frameStyle: googleFrameStyle,
+        );
+        final widget = CanvasMockupWidget(
+          data: itemData,
+          canvasSize: googleSize,
+          isExporting: true,
+        );
+
+        final pngBytes = await ExportService.captureHighResWidget(
+          widget: widget,
+          targetSize: googleSize,
+          context: context, // ignore: use_build_context_synchronously
+        );
+
+        zipFiles['Google_Play_Store_1440x2560/Screen_${i + 1}.png'] = pngBytes;
+      }
+
+      final zipBytes = ExportService.createZipArchive(zipFiles);
+      const zipFilename = 'Mokuply_StoreScreenshots_AllPlatforms.zip';
+      ExportService.downloadFileWeb(
+        bytes: zipBytes,
+        filename: zipFilename,
+        mimeType: 'application/zip',
+      );
+    } finally {
+      _isExporting = false;
+      _exportingProgressIndex = 0;
+      notifyListeners();
+    }
+  }
+
+  /// Sequential High-Res PNG Batch Download for current active platform screenshots.
+  Future<void> exportAllScreenshots({required BuildContext context}) async {
     _isExporting = true;
     _exportingProgressIndex = 0;
     notifyListeners();
@@ -467,6 +604,7 @@ class EditorViewModel extends ChangeNotifier {
         final pngBytes = await ExportService.captureHighResWidget(
           widget: widget,
           targetSize: targetSize,
+          context: context, // ignore: use_build_context_synchronously
         );
 
         final filename = '${platformTag}_mockup_screen_${i + 1}_of_${_screenshots.length}.png';

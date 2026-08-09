@@ -131,6 +131,7 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
         color: color,
         fontWeight: weight,
         height: 1.15,
+        decoration: TextDecoration.none,
       );
     } catch (_) {
       return TextStyle(
@@ -139,6 +140,7 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
         fontWeight: weight,
         fontFamily: fontName,
         height: 1.15,
+        decoration: TextDecoration.none,
       );
     }
   }
