@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 enum TargetPlatformType {
   appStore('Apple App Store', 'iPhone 16 Pro Max', 1320, 2868),
-  googlePlay('Google Play Store', 'Samsung S26 Ultra', 1080, 2340);
+  googlePlay('Google Play Store', 'Samsung S26 Ultra', 1440, 2560);
 
   final String platformName;
   final String deviceName;
