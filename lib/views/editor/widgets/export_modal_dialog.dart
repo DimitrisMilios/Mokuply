@@ -5,6 +5,7 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/store_specs.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/glass_container.dart';
+import '../../../services/css_spinner.dart';
 
 class ExportModalDialog extends StatelessWidget {
   const ExportModalDialog({super.key});
@@ -94,6 +95,7 @@ class ExportModalDialog extends StatelessWidget {
             // Live Export Progress Overlay
             if (vm.isExporting) ...[
               Container(
+                key: const ValueKey('export_progress_card'),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.08),
@@ -104,33 +106,44 @@ class ExportModalDialog extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5),
-                        ),
+                        const SmoothSpinnerWidget(),
                         const SizedBox(width: 12),
-                        Text(
-                          'Generating High-Res PNGs (${vm.exportingProgressIndex})...',
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                        Expanded(
+                          child: Text(
+                            vm.exportingStatusText.isNotEmpty
+                                ? vm.exportingStatusText
+                                : 'Processing Store Package...',
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: vm.exportingProgressIndex > 0
-                            ? (vm.exportingProgressIndex / (vm.screenshotsCount * 2))
-                            : null,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                        color: AppColors.primary,
-                        minHeight: 6,
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(
+                        begin: 0.0,
+                        end: vm.exportingTotalSteps > 0
+                            ? (vm.exportingProgressIndex / vm.exportingTotalSteps).clamp(0.0, 1.0)
+                            : 0.0,
                       ),
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, animValue, child) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            key: const ValueKey('export_linear_progress'),
+                            value: animValue,
+                            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                            color: AppColors.primary,
+                            minHeight: 6,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

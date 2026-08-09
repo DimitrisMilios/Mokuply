@@ -16,6 +16,8 @@ class EditorViewModel extends ChangeNotifier {
   int _selectedIndex = 0;
   bool _isExporting = false;
   int _exportingProgressIndex = 0;
+  int _exportingTotalSteps = 1;
+  String _exportingStatusText = '';
 
   // Flow & State Accessors
   bool get isHomeScreen => _isHomeScreen;
@@ -25,6 +27,8 @@ class EditorViewModel extends ChangeNotifier {
   int get screenshotsCount => _screenshots.length;
   bool get isExporting => _isExporting;
   int get exportingProgressIndex => _exportingProgressIndex;
+  int get exportingTotalSteps => _exportingTotalSteps;
+  String get exportingStatusText => _exportingStatusText;
 
   /// Gets currently active screenshot item
   TemplateData get data => _screenshots[_selectedIndex.clamp(0, _screenshots.length - 1)];
@@ -456,7 +460,10 @@ class EditorViewModel extends ChangeNotifier {
   Future<void> exportPlatformPack(TargetPlatformType targetPlatform, {required BuildContext context}) async {
     _isExporting = true;
     _exportingProgressIndex = 0;
+    _exportingTotalSteps = _screenshots.length;
+    _exportingStatusText = 'Preparing screenshots...';
     notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 16));
 
     try {
       final Size targetSize = Size(targetPlatform.targetWidth, targetPlatform.targetHeight);
@@ -468,7 +475,9 @@ class EditorViewModel extends ChangeNotifier {
 
       for (int i = 0; i < _screenshots.length; i++) {
         _exportingProgressIndex = i + 1;
+        _exportingStatusText = 'Rendering Screen #${i + 1} of ${_screenshots.length}...';
         notifyListeners();
+        await Future.delayed(const Duration(milliseconds: 20));
 
         final targetFrameStyle = _resolveFrameStyleForTargetPlatform(_screenshots[i].frameStyle, targetPlatform);
         final itemData = _screenshots[i].copyWith(
@@ -484,16 +493,21 @@ class EditorViewModel extends ChangeNotifier {
         final pngBytes = await ExportService.captureHighResWidget(
           widget: widget,
           targetSize: targetSize,
-          context: context,
+          context: context, // ignore: use_build_context_synchronously
         );
 
         final filename = '$folderName/Screen_${i + 1}.png';
         zipFiles[filename] = pngBytes;
+        await Future.delayed(const Duration(milliseconds: 16));
       }
+
+      _exportingStatusText = 'Packaging 100% Lossless ZIP Archive...';
+      notifyListeners();
+      await Future.delayed(const Duration(milliseconds: 32));
 
       final zipBytes = ExportService.createZipArchive(zipFiles);
       final zipFilename = 'Mokuply_$folderName.zip';
-      ExportService.downloadFileWeb(
+      await ExportService.downloadFileWeb(
         bytes: zipBytes,
         filename: zipFilename,
         mimeType: 'application/zip',
@@ -501,6 +515,7 @@ class EditorViewModel extends ChangeNotifier {
     } finally {
       _isExporting = false;
       _exportingProgressIndex = 0;
+      _exportingStatusText = '';
       notifyListeners();
     }
   }
@@ -509,7 +524,10 @@ class EditorViewModel extends ChangeNotifier {
   Future<void> exportBothPlatformsPack({required BuildContext context}) async {
     _isExporting = true;
     _exportingProgressIndex = 0;
+    _exportingTotalSteps = _screenshots.length * 2;
+    _exportingStatusText = 'Preparing store bundles...';
     notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 16));
 
     try {
       final Map<String, Uint8List> zipFiles = {};
@@ -518,7 +536,9 @@ class EditorViewModel extends ChangeNotifier {
       final appleSize = Size(TargetPlatformType.appStore.targetWidth, TargetPlatformType.appStore.targetHeight);
       for (int i = 0; i < _screenshots.length; i++) {
         _exportingProgressIndex = i + 1;
+        _exportingStatusText = 'Rendering Apple Screen #${i + 1} of ${_screenshots.length}...';
         notifyListeners();
+        await Future.delayed(const Duration(milliseconds: 20));
 
         final appleFrameStyle = _resolveFrameStyleForTargetPlatform(_screenshots[i].frameStyle, TargetPlatformType.appStore);
         final itemData = _screenshots[i].copyWith(
@@ -534,17 +554,20 @@ class EditorViewModel extends ChangeNotifier {
         final pngBytes = await ExportService.captureHighResWidget(
           widget: widget,
           targetSize: appleSize,
-          context: context,
+          context: context, // ignore: use_build_context_synchronously
         );
 
         zipFiles['Apple_App_Store_1320x2868/Screen_${i + 1}.png'] = pngBytes;
+        await Future.delayed(const Duration(milliseconds: 16));
       }
 
       // 2. Google Play Store Screens (1440 x 2560)
       final googleSize = Size(TargetPlatformType.googlePlay.targetWidth, TargetPlatformType.googlePlay.targetHeight);
       for (int i = 0; i < _screenshots.length; i++) {
         _exportingProgressIndex = _screenshots.length + i + 1;
+        _exportingStatusText = 'Rendering Google Screen #${i + 1} of ${_screenshots.length}...';
         notifyListeners();
+        await Future.delayed(const Duration(milliseconds: 20));
 
         final googleFrameStyle = _resolveFrameStyleForTargetPlatform(_screenshots[i].frameStyle, TargetPlatformType.googlePlay);
         final itemData = _screenshots[i].copyWith(
@@ -564,11 +587,16 @@ class EditorViewModel extends ChangeNotifier {
         );
 
         zipFiles['Google_Play_Store_1440x2560/Screen_${i + 1}.png'] = pngBytes;
+        await Future.delayed(const Duration(milliseconds: 16));
       }
+
+      _exportingStatusText = 'Packaging Complete Dual-Store ZIP Bundle...';
+      notifyListeners();
+      await Future.delayed(const Duration(milliseconds: 32));
 
       final zipBytes = ExportService.createZipArchive(zipFiles);
       const zipFilename = 'Mokuply_StoreScreenshots_AllPlatforms.zip';
-      ExportService.downloadFileWeb(
+      await ExportService.downloadFileWeb(
         bytes: zipBytes,
         filename: zipFilename,
         mimeType: 'application/zip',
@@ -576,6 +604,7 @@ class EditorViewModel extends ChangeNotifier {
     } finally {
       _isExporting = false;
       _exportingProgressIndex = 0;
+      _exportingStatusText = '';
       notifyListeners();
     }
   }
@@ -584,6 +613,7 @@ class EditorViewModel extends ChangeNotifier {
   Future<void> exportAllScreenshots({required BuildContext context}) async {
     _isExporting = true;
     _exportingProgressIndex = 0;
+    _exportingTotalSteps = _screenshots.length;
     notifyListeners();
 
     try {
