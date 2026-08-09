@@ -146,7 +146,10 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
   @override
   Widget build(BuildContext context) {
     final double baseWidth = widget.data.platform.targetWidth;
-    final double scaleRatio = widget.canvasSize.width / baseWidth;
+    final double frameScale = widget.canvasSize.width / baseWidth;
+    // Normalized reference scale for text font sizes and drag offsets so iPhone and Android match visually
+    const double referenceCanvasWidth = 1000.0;
+    final double textScale = widget.canvasSize.width / referenceCanvasWidth;
     final decoration = _backgroundDecoration;
 
     return Container(
@@ -171,14 +174,14 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
               ),
 
             // 2. Pure 2D Freeform Stack Layout
-            _buildFreeformCanvasLayout(context, scaleRatio),
+            _buildFreeformCanvasLayout(context, textScale: textScale, frameScale: frameScale),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFreeformCanvasLayout(BuildContext context, double scale) {
+  Widget _buildFreeformCanvasLayout(BuildContext context, {required double textScale, required double frameScale}) {
     final vm = widget.isExporting ? null : Provider.of<EditorViewModel>(context, listen: false);
     final data = widget.data;
     final double canvasHeight = widget.canvasSize.height;
@@ -221,18 +224,18 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
     final double effectiveDeviceX = _localDeviceX ?? data.deviceOffsetX;
     final double effectiveDeviceY = _localDeviceY ?? data.deviceOffsetY;
 
-    final double titleX = effectiveTitleX * scale;
-    final double titleY = baseTitleTop + (effectiveTitleY * scale);
+    final double titleX = effectiveTitleX * textScale;
+    final double titleY = baseTitleTop + (effectiveTitleY * textScale);
 
-    final double subtitleX = effectiveSubtitleX * scale;
-    final double subtitleY = baseSubtitleTop + (effectiveSubtitleY * scale);
+    final double subtitleX = effectiveSubtitleX * textScale;
+    final double subtitleY = baseSubtitleTop + (effectiveSubtitleY * textScale);
 
-    final double deviceX = effectiveDeviceX * scale;
-    final double deviceY = baseDeviceTop + (effectiveDeviceY * scale);
+    final double deviceX = effectiveDeviceX * textScale;
+    final double deviceY = baseDeviceTop + (effectiveDeviceY * textScale);
 
     // --- 1. TITLE ELEMENT WIDGET ---
     Widget titleWidget = Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16 * scale),
+      padding: EdgeInsets.symmetric(horizontal: 16 * textScale),
       child: Text(
         data.titleText,
         textAlign: data.titleAlignment,
@@ -241,14 +244,14 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
           fontSize: data.titleSize,
           color: data.textColor,
           weight: data.titleWeight,
-          scale: scale,
+          scale: textScale,
         ),
       ),
     );
 
     // --- 2. SUBTITLE ELEMENT WIDGET ---
     Widget subtitleWidget = Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24 * scale),
+      padding: EdgeInsets.symmetric(horizontal: 24 * textScale),
       child: Text(
         data.subtitleText,
         textAlign: data.subtitleAlignment,
@@ -257,13 +260,13 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
           fontSize: data.subtitleSize,
           color: data.subtitleColor,
           weight: data.subtitleWeight,
-          scale: scale,
+          scale: textScale,
         ),
       ),
     );
 
     // --- 3. DEVICE FRAME WIDGET ---
-    Widget deviceWidget = _buildDeviceFrame(scale);
+    Widget deviceWidget = _buildDeviceFrame(frameScale);
 
     // Wrap elements in drag gesture detectors if not exporting
     if (!widget.isExporting && vm != null) {
@@ -282,8 +285,8 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
             });
           },
           onPanUpdate: (details) {
-            final double dx = details.delta.dx / scale;
-            final double dy = details.delta.dy / scale;
+            final double dx = details.delta.dx / textScale;
+            final double dy = details.delta.dy / textScale;
             setState(() {
               _localTitleX = (_localTitleX ?? data.textOffsetX) + dx;
               _localTitleY = (_localTitleY ?? data.textOffsetY) + dy;
@@ -336,8 +339,8 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
             });
           },
           onPanUpdate: (details) {
-            final double dx = details.delta.dx / scale;
-            final double dy = details.delta.dy / scale;
+            final double dx = details.delta.dx / textScale;
+            final double dy = details.delta.dy / textScale;
             setState(() {
               _localSubtitleX = (_localSubtitleX ?? data.subtitleOffsetX) + dx;
               _localSubtitleY = (_localSubtitleY ?? data.subtitleOffsetY) + dy;
@@ -390,8 +393,8 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
             });
           },
           onPanUpdate: (details) {
-            final double dx = details.delta.dx / scale;
-            final double dy = details.delta.dy / scale;
+            final double dx = details.delta.dx / textScale;
+            final double dy = details.delta.dy / textScale;
             setState(() {
               _localDeviceX = (_localDeviceX ?? data.deviceOffsetX) + dx;
               _localDeviceY = (_localDeviceY ?? data.deviceOffsetY) + dy;
@@ -456,8 +459,8 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
         if (data.subtitleText.isNotEmpty)
           Positioned(
             top: subtitleY,
-            left: 20 * scale,
-            right: 20 * scale,
+            left: 20 * textScale,
+            right: 20 * textScale,
             child: Center(
               child: Transform.translate(
                 offset: Offset(subtitleX, 0),
@@ -470,8 +473,8 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
         if (data.titleText.isNotEmpty)
           Positioned(
             top: titleY,
-            left: 20 * scale,
-            right: 20 * scale,
+            left: 20 * textScale,
+            right: 20 * textScale,
             child: Center(
               child: Transform.translate(
                 offset: Offset(titleX, 0),
@@ -483,11 +486,11 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
         // 4. EXTRA CUSTOM TEXT ELEMENTS LAYER
         ...data.customTextItems.map((item) {
           final Offset localOffset = _localCustomTextOffsets[item.id] ?? Offset(item.offsetX, item.offsetY);
-          final double customX = localOffset.dx * scale;
-          final double customY = (canvasHeight * 0.5) + (localOffset.dy * scale);
+          final double customX = localOffset.dx * textScale;
+          final double customY = (canvasHeight * 0.5) + (localOffset.dy * textScale);
 
           Widget itemWidget = Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16 * scale),
+            padding: EdgeInsets.symmetric(horizontal: 16 * textScale),
             child: Text(
               item.text,
               textAlign: item.alignment,
@@ -496,7 +499,7 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
                 fontSize: item.fontSize,
                 color: item.color,
                 weight: item.weight,
-                scale: scale,
+                scale: textScale,
               ),
             ),
           );
@@ -518,8 +521,8 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
                   });
                 },
                 onPanUpdate: (details) {
-                  final double dx = details.delta.dx / scale;
-                  final double dy = details.delta.dy / scale;
+                  final double dx = details.delta.dx / textScale;
+                  final double dy = details.delta.dy / textScale;
                   final current = _localCustomTextOffsets[item.id] ?? Offset(item.offsetX, item.offsetY);
                   setState(() {
                     _localCustomTextOffsets[item.id] = Offset(current.dx + dx, current.dy + dy);
@@ -559,8 +562,8 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
 
           return Positioned(
             top: customY,
-            left: 20 * scale,
-            right: 20 * scale,
+            left: 20 * textScale,
+            right: 20 * textScale,
             child: Center(
               child: Transform.translate(
                 offset: Offset(customX, 0),
