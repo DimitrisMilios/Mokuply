@@ -17,6 +17,18 @@ enum TargetPlatformType {
   );
 
   double get aspectRatio => targetWidth / targetHeight;
+
+  /// Baseline aspect ratio (Apple App Store standard: 1320 / 2868 = 0.46025)
+  static const double referenceAspectRatio = 1320.0 / 2868.0;
+
+  /// Baseline canvas height (Apple App Store standard: 2868)
+  static const double referenceHeight = 2868.0;
+
+  /// Relative scale correction factor to maintain identical visual occupancy across store aspect ratios
+  double get scaleCorrectionFactor => referenceAspectRatio / aspectRatio;
+
+  /// Height scale factor relative to standard reference height
+  double get yOffsetScaleFactor => targetHeight / referenceHeight;
 }
 
 enum LayoutMode {
@@ -39,6 +51,22 @@ enum DeviceFrameStyle {
   final String name;
   final String description;
   const DeviceFrameStyle(this.name, this.description);
+
+  static List<DeviceFrameStyle> availableForPlatform(TargetPlatformType platform) {
+    if (platform == TargetPlatformType.appStore) {
+      return [
+        DeviceFrameStyle.iphone16ProMax,
+        DeviceFrameStyle.minimalOutline,
+        DeviceFrameStyle.none,
+      ];
+    } else {
+      return [
+        DeviceFrameStyle.samsungS26Ultra,
+        DeviceFrameStyle.minimalOutline,
+        DeviceFrameStyle.none,
+      ];
+    }
+  }
 }
 
 class ColorGradientPreset {

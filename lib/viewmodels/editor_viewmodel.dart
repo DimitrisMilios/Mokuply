@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/constants/store_specs.dart';
+import '../models/canvas_device_item.dart';
+import '../models/canvas_image_item.dart';
 import '../models/canvas_text_item.dart';
 import '../models/project_template.dart';
 import '../models/template_data.dart';
@@ -8,12 +10,20 @@ import '../services/export_service.dart';
 import '../services/file_service.dart';
 import '../widgets/canvas/canvas_mockup_widget.dart';
 
-/// Editor ViewModel — manages multi-screenshot project sets and app flow.
+/// Editor ViewModel — manages multi-screenshot project sets, canvas elements, and app flow.
 class EditorViewModel extends ChangeNotifier {
   bool _isHomeScreen = true;
   ProjectTemplate? _activeTemplate;
   List<TemplateData> _screenshots = ProjectTemplate.saasModern().initialScreenshots;
   int _selectedIndex = 0;
+
+  // Selected element tracking on active canvas screen
+  String? _selectedElementId; // e.g. 'title', 'subtitle', 'dev_123', 'img_123', 'txt_123'
+  String? _selectedDeviceId;
+  String? _selectedImageId;
+  String? _selectedTextId;
+
+  // Export State
   bool _isExporting = false;
   int _exportingProgressIndex = 0;
   int _exportingTotalSteps = 1;
@@ -30,13 +40,19 @@ class EditorViewModel extends ChangeNotifier {
   int get exportingTotalSteps => _exportingTotalSteps;
   String get exportingStatusText => _exportingStatusText;
 
+  // Active Element Selection Accessors
+  String? get selectedElementId => _selectedElementId;
+  String? get selectedDeviceId => _selectedDeviceId;
+  String? get selectedImageId => _selectedImageId;
+  String? get selectedTextId => _selectedTextId;
+
   /// Gets currently active screenshot item
   TemplateData get data => _screenshots[_selectedIndex.clamp(0, _screenshots.length - 1)];
 
   // Convenience getters delegating to active screenshot item
   TargetPlatformType get platform => data.platform;
   LayoutMode get layoutMode => data.layoutMode;
-  DeviceFrameStyle get frameStyle => data.frameStyle;
+  DeviceFrameStyle get frameStyle => selectedDevice?.frameStyle ?? data.frameStyle;
   String get titleText => data.titleText;
   String get subtitleText => data.subtitleText;
   String get titleFont => data.titleFont;
@@ -53,20 +69,49 @@ class EditorViewModel extends ChangeNotifier {
   Color? get customBackgroundColor => data.customBackgroundColor;
   List<Color>? get customGradientColors => data.customGradientColors;
   Uint8List? get customBackgroundImageBytes => data.customBackgroundImageBytes;
-  Uint8List? get screenshotBytes => data.screenshotBytes;
+
+  // Multi-Element Collections Accessors
+  List<CanvasDeviceItem> get devices => data.effectiveDevices;
+  List<CanvasImageItem> get customImageItems => data.customImageItems;
+  List<CanvasTextItem> get customTextItems => data.customTextItems;
+
+  /// Returns currently selected device frame on canvas
+  CanvasDeviceItem? get selectedDevice {
+    final devList = devices;
+    if (devList.isEmpty) return null;
+    if (_selectedDeviceId != null) {
+      final match = devList.where((d) => d.id == _selectedDeviceId).firstOrNull;
+      if (match != null) return match;
+    }
+    return devList.first;
+  }
+
+  /// Returns currently selected custom image asset on canvas
+  CanvasImageItem? get selectedCustomImage {
+    final imgList = customImageItems;
+    if (imgList.isEmpty) return null;
+    if (_selectedImageId != null) {
+      final match = imgList.where((i) => i.id == _selectedImageId).firstOrNull;
+      if (match != null) return match;
+    }
+    return imgList.first;
+  }
+
+  /// Single Device backward-compatible properties
+  Uint8List? get screenshotBytes => selectedDevice?.screenshotBytes ?? data.screenshotBytes;
   Uint8List? get iphoneScreenshotBytes => data.iphoneScreenshotBytes;
   Uint8List? get samsungScreenshotBytes => data.samsungScreenshotBytes;
-  Uint8List? get effectiveScreenshotBytes => data.effectiveScreenshotBytes;
-  double get deviceScale => data.deviceScale;
-  double get deviceOffsetX => data.deviceOffsetX;
-  double get deviceOffsetY => data.deviceOffsetY;
+  Uint8List? get effectiveScreenshotBytes => selectedDevice?.screenshotBytes ?? data.effectiveScreenshotBytes;
+  double get deviceScale => selectedDevice?.scale ?? data.deviceScale;
+  double get deviceOffsetX => selectedDevice?.offsetX ?? data.deviceOffsetX;
+  double get deviceOffsetY => selectedDevice?.offsetY ?? data.deviceOffsetY;
+  double get deviceRotation => selectedDevice?.rotation ?? data.deviceRotation;
+  bool get hasShadow => selectedDevice?.hasShadow ?? data.hasShadow;
+
   double get textOffsetX => data.textOffsetX; // Title X offset
   double get textOffsetY => data.textOffsetY; // Title Y offset
   double get subtitleOffsetX => data.subtitleOffsetX;
   double get subtitleOffsetY => data.subtitleOffsetY;
-  List<CanvasTextItem> get customTextItems => data.customTextItems;
-  double get deviceRotation => data.deviceRotation;
-  bool get hasShadow => data.hasShadow;
 
   /// Computed background decoration for current screenshot
   BoxDecoration get backgroundDecoration {
@@ -88,69 +133,284 @@ class EditorViewModel extends ChangeNotifier {
     ].toDecoration();
   }
 
-  // --- Mutators for Canvas Freeform Drag & Offsets ---
+  // --- Element Selection Handlers ---
 
-  void setDeviceOffsetX(double offsetX) {
-    _updateCurrentScreenshot(data.copyWith(deviceOffsetX: offsetX));
+  void selectElement(String? id) {
+    _selectedElementId = id;
+    if (id == null) {
+      _selectedDeviceId = null;
+      _selectedImageId = null;
+      _selectedTextId = null;
+    } else if (id.startsWith('dev_')) {
+      _selectedDeviceId = id;
+    } else if (id.startsWith('img_')) {
+      _selectedImageId = id;
+    } else if (id.startsWith('txt_')) {
+      _selectedTextId = id;
+    }
+    notifyListeners();
   }
 
-  void setDeviceOffsetY(double offsetY) {
-    _updateCurrentScreenshot(data.copyWith(deviceOffsetY: offsetY));
+  void selectDevice(String deviceId) {
+    _selectedDeviceId = deviceId;
+    _selectedElementId = deviceId;
+    notifyListeners();
   }
 
-  void setDeviceOffsets(double offsetX, double offsetY) {
-    _updateCurrentScreenshot(data.copyWith(
-      deviceOffsetX: offsetX,
-      deviceOffsetY: offsetY,
-    ));
+  void selectCustomImage(String imageId) {
+    _selectedImageId = imageId;
+    _selectedElementId = imageId;
+    notifyListeners();
   }
 
-  void setDeviceOffsetsForIndex(int index, double offsetX, double offsetY) {
+  // --- Multi-Device Frame Mutators ---
+
+  void addDeviceFrame([DeviceFrameStyle? style]) {
+    final currentDevices = List<CanvasDeviceItem>.from(data.effectiveDevices);
+    final String newId = 'dev_${DateTime.now().millisecondsSinceEpoch}';
+    final double offsetStep = (currentDevices.length * 90.0) - 45.0;
+
+    final newDevice = CanvasDeviceItem(
+      id: newId,
+      frameStyle: style ?? (platform == TargetPlatformType.googlePlay ? DeviceFrameStyle.samsungS26Ultra : DeviceFrameStyle.iphone16ProMax),
+      scale: 0.75,
+      offsetX: offsetStep,
+      offsetY: 0.0,
+      rotation: 0.0,
+      hasShadow: true,
+    );
+
+    currentDevices.add(newDevice);
+    _selectedDeviceId = newId;
+    _selectedElementId = newId;
+    _updateCurrentScreenshot(data.copyWith(devices: currentDevices));
+  }
+
+  void removeDeviceFrame(String deviceId) {
+    final currentDevices = List<CanvasDeviceItem>.from(data.effectiveDevices);
+    if (currentDevices.length <= 1) return; // Keep at least 1 device frame
+
+    currentDevices.removeWhere((d) => d.id == deviceId);
+    if (_selectedDeviceId == deviceId) {
+      _selectedDeviceId = currentDevices.isNotEmpty ? currentDevices.first.id : null;
+      _selectedElementId = _selectedDeviceId;
+    }
+    _updateCurrentScreenshot(data.copyWith(devices: currentDevices));
+  }
+
+  void updateDeviceFrame(String deviceId, CanvasDeviceItem updated) {
+    final updatedList = data.effectiveDevices.map((d) {
+      return d.id == deviceId ? updated : d;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(devices: updatedList));
+  }
+
+  void setDeviceFrameOffsetsForIndex(int index, String deviceId, double offsetX, double offsetY) {
     if (index >= 0 && index < _screenshots.length) {
-      _screenshots[index] = _screenshots[index].copyWith(
-        deviceOffsetX: offsetX,
-        deviceOffsetY: offsetY,
-      );
+      final currentList = _screenshots[index].effectiveDevices;
+      final updatedList = currentList.map((d) {
+        return d.id == deviceId ? d.copyWith(offsetX: offsetX, offsetY: offsetY) : d;
+      }).toList();
+      _screenshots[index] = _screenshots[index].copyWith(devices: updatedList);
       notifyListeners();
     }
   }
 
+  Future<void> pickDeviceFrameScreenshot(String deviceId) async {
+    final bytes = await FileService.pickImageBytes();
+    if (bytes != null) {
+      setDeviceFrameScreenshot(deviceId, bytes);
+    }
+  }
+
+  void setDeviceFrameScreenshot(String deviceId, Uint8List? bytes) {
+    final updatedList = data.effectiveDevices.map((d) {
+      return d.id == deviceId ? d.copyWith(screenshotBytes: () => bytes) : d;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(devices: updatedList));
+  }
+
+  void setDeviceFrameStyle(String deviceId, DeviceFrameStyle style) {
+    final updatedList = data.effectiveDevices.map((d) {
+      return d.id == deviceId ? d.copyWith(frameStyle: style) : d;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(devices: updatedList));
+  }
+
+  void setDeviceFrameScale(String deviceId, double scale) {
+    final updatedList = data.effectiveDevices.map((d) {
+      return d.id == deviceId ? d.copyWith(scale: scale) : d;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(devices: updatedList));
+  }
+
+  void setDeviceFrameRotation(String deviceId, double rotation) {
+    final updatedList = data.effectiveDevices.map((d) {
+      return d.id == deviceId ? d.copyWith(rotation: rotation) : d;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(devices: updatedList));
+  }
+
+  void setDeviceFrameShadow(String deviceId, bool hasShadow) {
+    final updatedList = data.effectiveDevices.map((d) {
+      return d.id == deviceId ? d.copyWith(hasShadow: hasShadow) : d;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(devices: updatedList));
+  }
+
+  // --- Multi-Custom Image Assets Mutators ---
+
+  Future<void> pickAndAddCustomImageItem() async {
+    final bytes = await FileService.pickImageBytes();
+    if (bytes != null) {
+      addCustomImageItem(bytes);
+    }
+  }
+
+  void addCustomImageItem(Uint8List bytes) {
+    final String newId = 'img_${DateTime.now().millisecondsSinceEpoch}';
+    final newItem = CanvasImageItem(
+      id: newId,
+      imageBytes: bytes,
+      scale: 1.0,
+      offsetX: 0.0,
+      offsetY: 0.0,
+      rotation: 0.0,
+      opacity: 1.0,
+      hasShadow: false,
+    );
+
+    final updatedList = List<CanvasImageItem>.from(data.customImageItems)..add(newItem);
+    _selectedImageId = newId;
+    _selectedElementId = newId;
+    _updateCurrentScreenshot(data.copyWith(customImageItems: updatedList));
+  }
+
+  void removeCustomImageItem(String imageId) {
+    final updatedList = data.customImageItems.where((i) => i.id != imageId).toList();
+    if (_selectedImageId == imageId) {
+      _selectedImageId = updatedList.isNotEmpty ? updatedList.first.id : null;
+      _selectedElementId = _selectedImageId;
+    }
+    _updateCurrentScreenshot(data.copyWith(customImageItems: updatedList));
+  }
+
+  void updateCustomImageItem(String imageId, CanvasImageItem updated) {
+    final updatedList = data.customImageItems.map((i) {
+      return i.id == imageId ? updated : i;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(customImageItems: updatedList));
+  }
+
+  void setCustomImageOffsetsForIndex(int index, String imageId, double offsetX, double offsetY) {
+    if (index >= 0 && index < _screenshots.length) {
+      final currentList = _screenshots[index].customImageItems;
+      final updatedList = currentList.map((i) {
+        return i.id == imageId ? i.copyWith(offsetX: offsetX, offsetY: offsetY) : i;
+      }).toList();
+      _screenshots[index] = _screenshots[index].copyWith(customImageItems: updatedList);
+      notifyListeners();
+    }
+  }
+
+  void setCustomImageScale(String imageId, double scale) {
+    final updatedList = data.customImageItems.map((i) {
+      return i.id == imageId ? i.copyWith(scale: scale) : i;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(customImageItems: updatedList));
+  }
+
+  void setCustomImageRotation(String imageId, double rotation) {
+    final updatedList = data.customImageItems.map((i) {
+      return i.id == imageId ? i.copyWith(rotation: rotation) : i;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(customImageItems: updatedList));
+  }
+
+  void setCustomImageOpacity(String imageId, double opacity) {
+    final updatedList = data.customImageItems.map((i) {
+      return i.id == imageId ? i.copyWith(opacity: opacity) : i;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(customImageItems: updatedList));
+  }
+
+  void setCustomImageShadow(String imageId, bool hasShadow) {
+    final updatedList = data.customImageItems.map((i) {
+      return i.id == imageId ? i.copyWith(hasShadow: hasShadow) : i;
+    }).toList();
+    _updateCurrentScreenshot(data.copyWith(customImageItems: updatedList));
+  }
+
+  // --- Mutators for Canvas Text Items & Offsets ---
+
+  void setDeviceOffsetX(double offsetX) {
+    final targetDev = selectedDevice;
+    if (targetDev != null) {
+      setDeviceFrameOffsetsForIndex(_selectedIndex, targetDev.id, offsetX, data.deviceOffsetY);
+    } else {
+      _updateCurrentScreenshot(data.copyWith(deviceOffsetX: offsetX));
+    }
+  }
+
+  void setDeviceOffsetY(double offsetY) {
+    final targetDev = selectedDevice;
+    if (targetDev != null) {
+      setDeviceFrameOffsetsForIndex(_selectedIndex, targetDev.id, data.deviceOffsetX, offsetY);
+    } else {
+      _updateCurrentScreenshot(data.copyWith(deviceOffsetY: offsetY));
+    }
+  }
+
+  void setDeviceOffsets(double offsetX, double offsetY) {
+    final targetDev = selectedDevice;
+    if (targetDev != null) {
+      setDeviceFrameOffsetsForIndex(_selectedIndex, targetDev.id, offsetX, offsetY);
+    } else {
+      _updateCurrentScreenshot(data.copyWith(deviceOffsetX: offsetX, deviceOffsetY: offsetY));
+    }
+  }
+
+  void setDeviceOffsetsForIndex(int index, double offsetX, double offsetY) {
+    if (index >= 0 && index < _screenshots.length) {
+      final targetDev = _screenshots[index].effectiveDevices.firstOrNull;
+      if (targetDev != null) {
+        setDeviceFrameOffsetsForIndex(index, targetDev.id, offsetX, offsetY);
+      } else {
+        _screenshots[index] = _screenshots[index].copyWith(deviceOffsetX: offsetX, deviceOffsetY: offsetY);
+        notifyListeners();
+      }
+    }
+  }
+
   void setTextOffsets(double offsetX, double offsetY) {
-    _updateCurrentScreenshot(data.copyWith(
-      textOffsetX: offsetX,
-      textOffsetY: offsetY,
-    ));
+    _updateCurrentScreenshot(data.copyWith(textOffsetX: offsetX, textOffsetY: offsetY));
   }
 
   void setTextOffsetsForIndex(int index, double offsetX, double offsetY) {
     if (index >= 0 && index < _screenshots.length) {
-      _screenshots[index] = _screenshots[index].copyWith(
-        textOffsetX: offsetX,
-        textOffsetY: offsetY,
-      );
+      _screenshots[index] = _screenshots[index].copyWith(textOffsetX: offsetX, textOffsetY: offsetY);
       notifyListeners();
     }
   }
 
   void setSubtitleOffsets(double offsetX, double offsetY) {
-    _updateCurrentScreenshot(data.copyWith(
-      subtitleOffsetX: offsetX,
-      subtitleOffsetY: offsetY,
-    ));
+    _updateCurrentScreenshot(data.copyWith(subtitleOffsetX: offsetX, subtitleOffsetY: offsetY));
   }
 
   void setSubtitleOffsetsForIndex(int index, double offsetX, double offsetY) {
     if (index >= 0 && index < _screenshots.length) {
-      _screenshots[index] = _screenshots[index].copyWith(
-        subtitleOffsetX: offsetX,
-        subtitleOffsetY: offsetY,
-      );
+      _screenshots[index] = _screenshots[index].copyWith(subtitleOffsetX: offsetX, subtitleOffsetY: offsetY);
       notifyListeners();
     }
   }
 
   void resetCanvasOffsets() {
+    final resetDevices = data.effectiveDevices.map((d) {
+      return d.copyWith(offsetX: 0.0, offsetY: 0.0, rotation: 0.0, scale: 0.85);
+    }).toList();
+
     _updateCurrentScreenshot(data.copyWith(
+      devices: resetDevices,
       deviceOffsetX: 0.0,
       deviceOffsetY: 0.0,
       textOffsetX: 0.0,
@@ -165,8 +425,9 @@ class EditorViewModel extends ChangeNotifier {
   // --- Mutators for Custom Extra Text Elements ---
 
   void addCustomTextElement() {
+    final newId = 'txt_${DateTime.now().millisecondsSinceEpoch}';
     final newItem = CanvasTextItem(
-      id: 'txt_${DateTime.now().millisecondsSinceEpoch}',
+      id: newId,
       text: 'New Text Element',
       fontSize: 28.0,
       color: Colors.white,
@@ -175,8 +436,11 @@ class EditorViewModel extends ChangeNotifier {
       alignment: TextAlign.center,
       offsetX: 0.0,
       offsetY: 80.0,
+      rotation: 0.0,
     );
     final updatedList = List<CanvasTextItem>.from(data.customTextItems)..add(newItem);
+    _selectedTextId = newId;
+    _selectedElementId = newId;
     _updateCurrentScreenshot(data.copyWith(customTextItems: updatedList));
   }
 
@@ -190,9 +454,7 @@ class EditorViewModel extends ChangeNotifier {
   void updateCustomTextElementForIndex(int index, String id, CanvasTextItem updated) {
     if (index >= 0 && index < _screenshots.length) {
       final currentList = _screenshots[index].customTextItems;
-      final updatedList = currentList.map((item) {
-        return item.id == id ? updated : item;
-      }).toList();
+      final updatedList = currentList.map((item) => item.id == id ? updated : item).toList();
       _screenshots[index] = _screenshots[index].copyWith(customTextItems: updatedList);
       notifyListeners();
     }
@@ -211,6 +473,10 @@ class EditorViewModel extends ChangeNotifier {
 
   void removeCustomTextElement(String id) {
     final updatedList = data.customTextItems.where((item) => item.id != id).toList();
+    if (_selectedTextId == id) {
+      _selectedTextId = updatedList.isNotEmpty ? updatedList.first.id : null;
+      _selectedElementId = _selectedTextId;
+    }
     _updateCurrentScreenshot(data.copyWith(customTextItems: updatedList));
   }
 
@@ -248,6 +514,10 @@ class EditorViewModel extends ChangeNotifier {
   }
 
   void setScreenshotBytes(Uint8List? bytes) {
+    final targetDev = selectedDevice;
+    if (targetDev != null) {
+      setDeviceFrameScreenshot(targetDev.id, bytes);
+    }
     _updateCurrentScreenshot(data.copyWith(screenshotBytes: () => bytes));
   }
 
@@ -273,7 +543,6 @@ class EditorViewModel extends ChangeNotifier {
     }
   }
 
-
   // --- Flow Navigation ---
 
   void openEditorWithTemplate(ProjectTemplate template) {
@@ -281,6 +550,10 @@ class EditorViewModel extends ChangeNotifier {
     _screenshots = List.from(template.initialScreenshots);
     _selectedIndex = 0;
     _isHomeScreen = false;
+    _selectedElementId = null;
+    _selectedDeviceId = null;
+    _selectedImageId = null;
+    _selectedTextId = null;
     notifyListeners();
   }
 
@@ -289,6 +562,10 @@ class EditorViewModel extends ChangeNotifier {
     _screenshots = List.from(_activeTemplate!.initialScreenshots);
     _selectedIndex = 0;
     _isHomeScreen = false;
+    _selectedElementId = null;
+    _selectedDeviceId = null;
+    _selectedImageId = null;
+    _selectedTextId = null;
     notifyListeners();
   }
 
@@ -302,6 +579,10 @@ class EditorViewModel extends ChangeNotifier {
   void selectScreenshot(int index) {
     if (index >= 0 && index < _screenshots.length) {
       _selectedIndex = index;
+      _selectedElementId = null;
+      _selectedDeviceId = null;
+      _selectedImageId = null;
+      _selectedTextId = null;
       notifyListeners();
     }
   }
@@ -320,7 +601,7 @@ class EditorViewModel extends ChangeNotifier {
   }
 
   void removeScreenshot(int index) {
-    if (_screenshots.length <= 1) return; // Keep at least 1 screenshot
+    if (_screenshots.length <= 1) return;
     _screenshots.removeAt(index);
     if (_selectedIndex >= _screenshots.length) {
       _selectedIndex = _screenshots.length - 1;
@@ -347,13 +628,25 @@ class EditorViewModel extends ChangeNotifier {
   }
 
   void setPlatform(TargetPlatformType newPlatform) {
-    // Update platform across ALL screenshots in project for target store consistency
     _screenshots = _screenshots.map((s) {
+      final targetDefaultFrameStyle = newPlatform == TargetPlatformType.googlePlay
+          ? DeviceFrameStyle.samsungS26Ultra
+          : DeviceFrameStyle.iphone16ProMax;
+
+      final updatedDevices = s.effectiveDevices.map((d) {
+        if (newPlatform == TargetPlatformType.googlePlay && d.frameStyle == DeviceFrameStyle.iphone16ProMax) {
+          return d.copyWith(frameStyle: DeviceFrameStyle.samsungS26Ultra);
+        }
+        if (newPlatform == TargetPlatformType.appStore && d.frameStyle == DeviceFrameStyle.samsungS26Ultra) {
+          return d.copyWith(frameStyle: DeviceFrameStyle.iphone16ProMax);
+        }
+        return d;
+      }).toList();
+
       return s.copyWith(
         platform: newPlatform,
-        frameStyle: newPlatform == TargetPlatformType.googlePlay
-            ? DeviceFrameStyle.samsungS26Ultra
-            : DeviceFrameStyle.iphone16ProMax,
+        frameStyle: targetDefaultFrameStyle,
+        devices: updatedDevices,
       );
     }).toList();
     notifyListeners();
@@ -364,7 +657,12 @@ class EditorViewModel extends ChangeNotifier {
   }
 
   void setFrameStyle(DeviceFrameStyle style) {
-    _updateCurrentScreenshot(data.copyWith(frameStyle: style));
+    final targetDev = selectedDevice;
+    if (targetDev != null) {
+      setDeviceFrameStyle(targetDev.id, style);
+    } else {
+      _updateCurrentScreenshot(data.copyWith(frameStyle: style));
+    }
   }
 
   void setTitleText(String text) {
@@ -422,28 +720,52 @@ class EditorViewModel extends ChangeNotifier {
   }
 
   void setDeviceScale(double scale) {
-    _updateCurrentScreenshot(data.copyWith(deviceScale: scale));
+    final targetDev = selectedDevice;
+    if (targetDev != null) {
+      setDeviceFrameScale(targetDev.id, scale);
+    } else {
+      _updateCurrentScreenshot(data.copyWith(deviceScale: scale));
+    }
   }
 
   void setDeviceRotation(double degrees) {
-    _updateCurrentScreenshot(data.copyWith(deviceRotation: degrees));
+    final targetDev = selectedDevice;
+    if (targetDev != null) {
+      setDeviceFrameRotation(targetDev.id, degrees);
+    } else {
+      _updateCurrentScreenshot(data.copyWith(deviceRotation: degrees));
+    }
   }
 
   void setHasShadow(bool shadow) {
-    _updateCurrentScreenshot(data.copyWith(hasShadow: shadow));
+    final targetDev = selectedDevice;
+    if (targetDev != null) {
+      setDeviceFrameShadow(targetDev.id, shadow);
+    } else {
+      _updateCurrentScreenshot(data.copyWith(hasShadow: shadow));
+    }
   }
 
   void resetToDefaults() {
     _screenshots = ProjectTemplate.saasModern().initialScreenshots;
     _selectedIndex = 0;
+    _selectedElementId = null;
+    _selectedDeviceId = null;
+    _selectedImageId = null;
+    _selectedTextId = null;
     notifyListeners();
   }
 
-  /// Pick an image file for currently selected screenshot
+  /// Pick an image file for currently selected screenshot/device
   Future<void> pickScreenshot() async {
     final bytes = await FileService.pickImageBytes();
     if (bytes != null) {
-      setScreenshotBytes(bytes);
+      final targetDev = selectedDevice;
+      if (targetDev != null) {
+        setDeviceFrameScreenshot(targetDev.id, bytes);
+      } else {
+        setScreenshotBytes(bytes);
+      }
     }
   }
 

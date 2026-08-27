@@ -12,6 +12,7 @@ class CanvasTextItem {
   final TextAlign alignment;
   final double offsetX;
   final double offsetY;
+  final double rotation;
 
   const CanvasTextItem({
     required this.id,
@@ -23,6 +24,7 @@ class CanvasTextItem {
     this.alignment = TextAlign.center,
     this.offsetX = 0.0,
     this.offsetY = 0.0,
+    this.rotation = 0.0,
   });
 
   CanvasTextItem copyWith({
@@ -35,6 +37,7 @@ class CanvasTextItem {
     TextAlign? alignment,
     double? offsetX,
     double? offsetY,
+    double? rotation,
   }) {
     return CanvasTextItem(
       id: id ?? this.id,
@@ -46,6 +49,7 @@ class CanvasTextItem {
       alignment: alignment ?? this.alignment,
       offsetX: offsetX ?? this.offsetX,
       offsetY: offsetY ?? this.offsetY,
+      rotation: rotation ?? this.rotation,
     );
   }
 }

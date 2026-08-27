@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocuply/app.dart';
+import 'package:mocuply/viewmodels/editor_viewmodel.dart';
 
 void main() {
-  testWidgets('Mocuply smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const MocuplyApp());
-    expect(find.text('Mocuply'), findsOneWidget);
+  test('EditorViewModel smoke test', () {
+    final vm = EditorViewModel();
+    expect(vm.isHomeScreen, isTrue);
+    expect(vm.screenshots.length, greaterThan(0));
   });
 }

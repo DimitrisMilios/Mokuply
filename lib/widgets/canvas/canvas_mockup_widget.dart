@@ -75,21 +75,23 @@ class CanvasMockupWidget extends StatefulWidget {
 class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
   bool _isHoveringTitle = false;
   bool _isHoveringSubtitle = false;
-  bool _isHoveringDevice = false;
+  String? _hoveringDeviceId;
+  String? _hoveringImageId;
   String? _hoveringCustomTextId;
 
   bool _isDraggingTitle = false;
   bool _isDraggingSubtitle = false;
-  bool _isDraggingDevice = false;
+  String? _draggingDeviceId;
+  String? _draggingImageId;
   String? _draggingCustomTextId;
 
-  // Local drag offsets for Title, Subtitle, Device Frame, and Custom Text items
+  // Local drag offsets for Title, Subtitle, Device Frames, Custom Images, and Custom Text items
   double? _localTitleX;
   double? _localTitleY;
   double? _localSubtitleX;
   double? _localSubtitleY;
-  double? _localDeviceX;
-  double? _localDeviceY;
+  final Map<String, Offset> _localDeviceOffsets = {};
+  final Map<String, Offset> _localImageOffsets = {};
   final Map<String, Offset> _localCustomTextOffsets = {};
 
   BoxDecoration get _backgroundDecoration {
@@ -149,7 +151,6 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
   Widget build(BuildContext context) {
     final double baseWidth = widget.data.platform.targetWidth;
     final double frameScale = widget.canvasSize.width / baseWidth;
-    // Normalized reference scale for text font sizes and drag offsets so iPhone and Android match visually
     const double referenceCanvasWidth = 1000.0;
     final double textScale = widget.canvasSize.width / referenceCanvasWidth;
     final decoration = _backgroundDecoration;
@@ -186,54 +187,52 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
   Widget _buildFreeformCanvasLayout(BuildContext context, {required double textScale, required double frameScale}) {
     final vm = widget.isExporting ? null : Provider.of<EditorViewModel>(context, listen: false);
     final data = widget.data;
+    final double canvasWidth = widget.canvasSize.width;
     final double canvasHeight = widget.canvasSize.height;
 
-    // Base initial Y top positions based on selected preset layout mode
-    double baseTitleTop = 0.0;
-    double baseSubtitleTop = 0.0;
-    double baseDeviceTop = 0.0;
+    // Platform aspect ratio normalization factors
+    final double platformScaleCorrection = data.platform.scaleCorrectionFactor;
+
+    // Base initial Y center positions based on selected preset layout mode
+    double baseTitleCenterY = canvasHeight * 0.08;
+    double baseSubtitleCenterY = canvasHeight * 0.17;
+    double baseDeviceCenterY = canvasHeight * 0.62;
 
     switch (data.layoutMode) {
       case LayoutMode.titleTopDeviceBottom:
-        baseTitleTop = canvasHeight * 0.06;
-        baseSubtitleTop = canvasHeight * 0.16;
-        baseDeviceTop = canvasHeight * 0.32;
+        baseTitleCenterY = canvasHeight * 0.08;
+        baseSubtitleCenterY = canvasHeight * 0.17;
+        baseDeviceCenterY = canvasHeight * 0.62;
         break;
       case LayoutMode.titleBottomDeviceTop:
-        baseDeviceTop = canvasHeight * 0.06;
-        baseTitleTop = canvasHeight * 0.72;
-        baseSubtitleTop = canvasHeight * 0.82;
+        baseDeviceCenterY = canvasHeight * 0.36;
+        baseTitleCenterY = canvasHeight * 0.74;
+        baseSubtitleCenterY = canvasHeight * 0.84;
         break;
       case LayoutMode.deviceCentered:
-        baseTitleTop = canvasHeight * 0.06;
-        baseSubtitleTop = canvasHeight * 0.15;
-        baseDeviceTop = canvasHeight * 0.24;
+        baseTitleCenterY = canvasHeight * 0.08;
+        baseSubtitleCenterY = canvasHeight * 0.16;
+        baseDeviceCenterY = canvasHeight * 0.54;
         break;
       case LayoutMode.fullBleedHero:
-        baseTitleTop = canvasHeight * 0.06;
-        baseSubtitleTop = canvasHeight * 0.16;
-        baseDeviceTop = canvasHeight * 0.38;
+        baseTitleCenterY = canvasHeight * 0.08;
+        baseSubtitleCenterY = canvasHeight * 0.17;
+        baseDeviceCenterY = canvasHeight * 0.64;
         break;
     }
 
-    // Effective positions for Title, Subtitle, Device Frame
+    // Effective positions for Title & Subtitle
     final double effectiveTitleX = _localTitleX ?? data.textOffsetX;
     final double effectiveTitleY = _localTitleY ?? data.textOffsetY;
 
     final double effectiveSubtitleX = _localSubtitleX ?? data.subtitleOffsetX;
     final double effectiveSubtitleY = _localSubtitleY ?? data.subtitleOffsetY;
 
-    final double effectiveDeviceX = _localDeviceX ?? data.deviceOffsetX;
-    final double effectiveDeviceY = _localDeviceY ?? data.deviceOffsetY;
+    final double titleCenterX = (canvasWidth / 2) + (canvasWidth * (effectiveTitleX / 1000.0));
+    final double titleCenterY = baseTitleCenterY + (canvasHeight * (effectiveTitleY / 2000.0));
 
-    final double titleX = effectiveTitleX * textScale;
-    final double titleY = baseTitleTop + (effectiveTitleY * textScale);
-
-    final double subtitleX = effectiveSubtitleX * textScale;
-    final double subtitleY = baseSubtitleTop + (effectiveSubtitleY * textScale);
-
-    final double deviceX = effectiveDeviceX * textScale;
-    final double deviceY = baseDeviceTop + (effectiveDeviceY * textScale);
+    final double subtitleCenterX = (canvasWidth / 2) + (canvasWidth * (effectiveSubtitleX / 1000.0));
+    final double subtitleCenterY = baseSubtitleCenterY + (canvasHeight * (effectiveSubtitleY / 2000.0));
 
     // --- 1. TITLE ELEMENT WIDGET ---
     Widget titleWidget = Padding(
@@ -267,12 +266,9 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
       ),
     );
 
-    // --- 3. DEVICE FRAME WIDGET ---
-    Widget deviceWidget = _buildDeviceFrame(frameScale);
-
-    // Wrap elements in drag gesture detectors if not exporting
+    // Interactive Wrappers for Title and Subtitle
     if (!widget.isExporting && vm != null) {
-      // Title Draggable Wrapper
+      final isTitleSelected = vm.selectedElementId == 'title';
       titleWidget = MouseRegion(
         cursor: SystemMouseCursors.move,
         onEnter: (_) => setState(() => _isHoveringTitle = true),
@@ -280,6 +276,7 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
         child: _EagerPanDetector(
           onPanStart: (_) {
             vm.selectScreenshot(widget.itemIndex);
+            vm.selectElement('title');
             setState(() {
               _isDraggingTitle = true;
               _localTitleX = data.textOffsetX;
@@ -287,8 +284,8 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
             });
           },
           onPanUpdate: (details) {
-            final double dx = details.delta.dx / textScale;
-            final double dy = details.delta.dy / textScale;
+            final double dx = (details.delta.dx / canvasWidth) * 1000.0;
+            final double dy = (details.delta.dy / canvasHeight) * 2000.0;
             setState(() {
               _localTitleX = (_localTitleX ?? data.textOffsetX) + dx;
               _localTitleY = (_localTitleY ?? data.textOffsetY) + dy;
@@ -315,18 +312,18 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               border: Border.all(
-                color: (_isHoveringTitle || _isDraggingTitle) ? AppColors.primary : Colors.transparent,
-                width: (_isHoveringTitle || _isDraggingTitle) ? 2.0 : 1.0,
+                color: (isTitleSelected || _isHoveringTitle || _isDraggingTitle) ? AppColors.primary : Colors.transparent,
+                width: (isTitleSelected || _isHoveringTitle || _isDraggingTitle) ? 2.0 : 0.0,
               ),
               borderRadius: BorderRadius.circular(6),
-              color: (_isHoveringTitle || _isDraggingTitle) ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
+              color: (isTitleSelected || _isHoveringTitle || _isDraggingTitle) ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
             ),
             child: titleWidget,
           ),
         ),
       );
 
-      // Subtitle Draggable Wrapper
+      final isSubtitleSelected = vm.selectedElementId == 'subtitle';
       subtitleWidget = MouseRegion(
         cursor: SystemMouseCursors.move,
         onEnter: (_) => setState(() => _isHoveringSubtitle = true),
@@ -334,6 +331,7 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
         child: _EagerPanDetector(
           onPanStart: (_) {
             vm.selectScreenshot(widget.itemIndex);
+            vm.selectElement('subtitle');
             setState(() {
               _isDraggingSubtitle = true;
               _localSubtitleX = data.subtitleOffsetX;
@@ -341,8 +339,8 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
             });
           },
           onPanUpdate: (details) {
-            final double dx = details.delta.dx / textScale;
-            final double dy = details.delta.dy / textScale;
+            final double dx = (details.delta.dx / canvasWidth) * 1000.0;
+            final double dy = (details.delta.dy / canvasHeight) * 2000.0;
             setState(() {
               _localSubtitleX = (_localSubtitleX ?? data.subtitleOffsetX) + dx;
               _localSubtitleY = (_localSubtitleY ?? data.subtitleOffsetY) + dy;
@@ -369,67 +367,13 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               border: Border.all(
-                color: (_isHoveringSubtitle || _isDraggingSubtitle) ? AppColors.primary : Colors.transparent,
-                width: (_isHoveringSubtitle || _isDraggingSubtitle) ? 2.0 : 1.0,
+                color: (isSubtitleSelected || _isHoveringSubtitle || _isDraggingSubtitle) ? AppColors.primary : Colors.transparent,
+                width: (isSubtitleSelected || _isHoveringSubtitle || _isDraggingSubtitle) ? 2.0 : 0.0,
               ),
               borderRadius: BorderRadius.circular(6),
-              color: (_isHoveringSubtitle || _isDraggingSubtitle) ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
+              color: (isSubtitleSelected || _isHoveringSubtitle || _isDraggingSubtitle) ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
             ),
             child: subtitleWidget,
-          ),
-        ),
-      );
-
-      // Device Frame Draggable Wrapper
-      deviceWidget = MouseRegion(
-        cursor: SystemMouseCursors.move,
-        onEnter: (_) => setState(() => _isHoveringDevice = true),
-        onExit: (_) => setState(() => _isHoveringDevice = false),
-        child: _EagerPanDetector(
-          onPanStart: (_) {
-            vm.selectScreenshot(widget.itemIndex);
-            setState(() {
-              _isDraggingDevice = true;
-              _localDeviceX = data.deviceOffsetX;
-              _localDeviceY = data.deviceOffsetY;
-            });
-          },
-          onPanUpdate: (details) {
-            final double dx = details.delta.dx / textScale;
-            final double dy = details.delta.dy / textScale;
-            setState(() {
-              _localDeviceX = (_localDeviceX ?? data.deviceOffsetX) + dx;
-              _localDeviceY = (_localDeviceY ?? data.deviceOffsetY) + dy;
-            });
-          },
-          onPanEnd: (_) {
-            if (_localDeviceX != null && _localDeviceY != null) {
-              vm.setDeviceOffsetsForIndex(widget.itemIndex, _localDeviceX!, _localDeviceY!);
-            }
-            setState(() {
-              _isDraggingDevice = false;
-              _localDeviceX = null;
-              _localDeviceY = null;
-            });
-          },
-          onPanCancel: () {
-            setState(() {
-              _isDraggingDevice = false;
-              _localDeviceX = null;
-              _localDeviceY = null;
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: (_isHoveringDevice || _isDraggingDevice) ? AppColors.primary : Colors.transparent,
-                width: (_isHoveringDevice || _isDraggingDevice) ? 2.5 : 1.0,
-              ),
-              borderRadius: BorderRadius.circular(32),
-              color: (_isHoveringDevice || _isDraggingDevice) ? AppColors.primary.withValues(alpha: 0.04) : Colors.transparent,
-            ),
-            child: deviceWidget,
           ),
         ),
       );
@@ -438,58 +382,220 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // 1. DEVICE FRAME LAYER
-        Positioned(
-          top: deviceY,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: Transform.translate(
-              offset: Offset(deviceX, 0),
+        // --- 1. MULTI-DEVICE FRAMES LAYER ---
+        ...data.effectiveDevices.map((device) {
+          final Offset localOffset = _localDeviceOffsets[device.id] ?? Offset(device.offsetX, device.offsetY);
+          final double devCenterX = (canvasWidth / 2) + (canvasWidth * (localOffset.dx / 1000.0));
+          final double devCenterY = baseDeviceCenterY + (canvasHeight * (localOffset.dy / 2000.0));
+
+          Widget deviceFrameWidget = DeviceFrameWidget(
+            frameStyle: device.frameStyle,
+            screenshotBytes: device.screenshotBytes,
+            hasShadow: device.hasShadow,
+            platform: data.platform,
+            scale: frameScale,
+          );
+
+          if (!widget.isExporting && vm != null) {
+            final isSelected = vm.selectedElementId == device.id || vm.selectedDeviceId == device.id;
+            final isHovering = _hoveringDeviceId == device.id;
+            final isDragging = _draggingDeviceId == device.id;
+
+            deviceFrameWidget = Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: (isSelected || isHovering || isDragging) ? AppColors.primary : Colors.transparent,
+                  width: (isSelected || isHovering || isDragging) ? 2.5 : 0.0,
+                ),
+                borderRadius: BorderRadius.circular(32),
+                color: (isSelected || isHovering || isDragging) ? AppColors.primary.withValues(alpha: 0.04) : Colors.transparent,
+              ),
+              child: deviceFrameWidget,
+            );
+
+            deviceFrameWidget = MouseRegion(
+              cursor: SystemMouseCursors.move,
+              onEnter: (_) => setState(() => _hoveringDeviceId = device.id),
+              onExit: (_) => setState(() => _hoveringDeviceId = null),
+              child: _EagerPanDetector(
+                onPanStart: (_) {
+                  vm.selectScreenshot(widget.itemIndex);
+                  vm.selectDevice(device.id);
+                  setState(() {
+                    _draggingDeviceId = device.id;
+                    _localDeviceOffsets[device.id] = Offset(device.offsetX, device.offsetY);
+                  });
+                },
+                onPanUpdate: (details) {
+                  final double dx = (details.delta.dx / canvasWidth) * 1000.0;
+                  final double dy = (details.delta.dy / canvasHeight) * 2000.0;
+                  final current = _localDeviceOffsets[device.id] ?? Offset(device.offsetX, device.offsetY);
+                  setState(() {
+                    _localDeviceOffsets[device.id] = Offset(current.dx + dx, current.dy + dy);
+                  });
+                },
+                onPanEnd: (_) {
+                  final finalOffset = _localDeviceOffsets[device.id];
+                  if (finalOffset != null) {
+                    vm.setDeviceFrameOffsetsForIndex(widget.itemIndex, device.id, finalOffset.dx, finalOffset.dy);
+                  }
+                  setState(() {
+                    _draggingDeviceId = null;
+                    _localDeviceOffsets.remove(device.id);
+                  });
+                },
+                onPanCancel: () {
+                  setState(() {
+                    _draggingDeviceId = null;
+                    _localDeviceOffsets.remove(device.id);
+                  });
+                },
+                child: deviceFrameWidget,
+              ),
+            );
+          }
+
+          return Positioned(
+            left: devCenterX,
+            top: devCenterY,
+            child: FractionalTranslation(
+              translation: const Offset(-0.5, -0.5),
               child: Transform.rotate(
-                angle: data.deviceRotation * (pi / 180),
+                angle: device.rotation * (pi / 180),
                 child: Transform.scale(
-                  scale: data.deviceScale * (data.layoutMode == LayoutMode.fullBleedHero ? 1.15 : 1.0),
-                  child: deviceWidget,
+                  scale: device.scale * platformScaleCorrection * (data.layoutMode == LayoutMode.fullBleedHero ? 1.15 : 1.0),
+                  child: deviceFrameWidget,
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        }),
 
-        // 2. SUBTITLE LAYER
+        // --- 2. STANDALONE CUSTOM IMAGES LAYER ---
+        ...data.customImageItems.map((imgItem) {
+          final Offset localOffset = _localImageOffsets[imgItem.id] ?? Offset(imgItem.offsetX, imgItem.offsetY);
+          final double imgCenterX = (canvasWidth / 2) + (canvasWidth * (localOffset.dx / 1000.0));
+          final double imgCenterY = (canvasHeight * 0.5) + (canvasHeight * (localOffset.dy / 2000.0));
+
+          Widget imageWidget = Container(
+            decoration: BoxDecoration(
+              boxShadow: imgItem.hasShadow
+                  ? const [BoxShadow(color: Colors.black38, blurRadius: 18, spreadRadius: 2, offset: Offset(0, 8))]
+                  : null,
+            ),
+            child: Opacity(
+              opacity: imgItem.opacity,
+              child: Image.memory(
+                imgItem.imageBytes,
+                fit: BoxFit.contain,
+              ),
+            ),
+          );
+
+          if (!widget.isExporting && vm != null) {
+            final isSelected = vm.selectedElementId == imgItem.id || vm.selectedImageId == imgItem.id;
+            final isHovering = _hoveringImageId == imgItem.id;
+            final isDragging = _draggingImageId == imgItem.id;
+
+            imageWidget = Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: (isSelected || isHovering || isDragging) ? AppColors.primary : Colors.transparent,
+                  width: (isSelected || isHovering || isDragging) ? 2.0 : 0.0,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                color: (isSelected || isHovering || isDragging) ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
+              ),
+              child: imageWidget,
+            );
+
+            imageWidget = MouseRegion(
+              cursor: SystemMouseCursors.move,
+              onEnter: (_) => setState(() => _hoveringImageId = imgItem.id),
+              onExit: (_) => setState(() => _hoveringImageId = null),
+              child: _EagerPanDetector(
+                onPanStart: (_) {
+                  vm.selectScreenshot(widget.itemIndex);
+                  vm.selectCustomImage(imgItem.id);
+                  setState(() {
+                    _draggingImageId = imgItem.id;
+                    _localImageOffsets[imgItem.id] = Offset(imgItem.offsetX, imgItem.offsetY);
+                  });
+                },
+                onPanUpdate: (details) {
+                  final double dx = (details.delta.dx / canvasWidth) * 1000.0;
+                  final double dy = (details.delta.dy / canvasHeight) * 2000.0;
+                  final current = _localImageOffsets[imgItem.id] ?? Offset(imgItem.offsetX, imgItem.offsetY);
+                  setState(() {
+                    _localImageOffsets[imgItem.id] = Offset(current.dx + dx, current.dy + dy);
+                  });
+                },
+                onPanEnd: (_) {
+                  final finalOffset = _localImageOffsets[imgItem.id];
+                  if (finalOffset != null) {
+                    vm.setCustomImageOffsetsForIndex(widget.itemIndex, imgItem.id, finalOffset.dx, finalOffset.dy);
+                  }
+                  setState(() {
+                    _draggingImageId = null;
+                    _localImageOffsets.remove(imgItem.id);
+                  });
+                },
+                onPanCancel: () {
+                  setState(() {
+                    _draggingImageId = null;
+                    _localImageOffsets.remove(imgItem.id);
+                  });
+                },
+                child: imageWidget,
+              ),
+            );
+          }
+
+          return Positioned(
+            left: imgCenterX,
+            top: imgCenterY,
+            child: FractionalTranslation(
+              translation: const Offset(-0.5, -0.5),
+              child: Transform.rotate(
+                angle: imgItem.rotation * (pi / 180),
+                child: Transform.scale(
+                  scale: imgItem.scale * platformScaleCorrection,
+                  child: imageWidget,
+                ),
+              ),
+            ),
+          );
+        }),
+
+        // --- 3. SUBTITLE LAYER ---
         if (data.subtitleText.isNotEmpty)
           Positioned(
-            top: subtitleY,
-            left: 20 * textScale,
-            right: 20 * textScale,
-            child: Center(
-              child: Transform.translate(
-                offset: Offset(subtitleX, 0),
-                child: subtitleWidget,
-              ),
+            left: subtitleCenterX,
+            top: subtitleCenterY,
+            child: FractionalTranslation(
+              translation: const Offset(-0.5, -0.5),
+              child: subtitleWidget,
             ),
           ),
 
-        // 3. TITLE LAYER
+        // --- 4. TITLE LAYER ---
         if (data.titleText.isNotEmpty)
           Positioned(
-            top: titleY,
-            left: 20 * textScale,
-            right: 20 * textScale,
-            child: Center(
-              child: Transform.translate(
-                offset: Offset(titleX, 0),
-                child: titleWidget,
-              ),
+            left: titleCenterX,
+            top: titleCenterY,
+            child: FractionalTranslation(
+              translation: const Offset(-0.5, -0.5),
+              child: titleWidget,
             ),
           ),
 
-        // 4. EXTRA CUSTOM TEXT ELEMENTS LAYER
+        // --- 5. EXTRA CUSTOM TEXT ELEMENTS LAYER ---
         ...data.customTextItems.map((item) {
           final Offset localOffset = _localCustomTextOffsets[item.id] ?? Offset(item.offsetX, item.offsetY);
-          final double customX = localOffset.dx * textScale;
-          final double customY = (canvasHeight * 0.5) + (localOffset.dy * textScale);
+          final double customCenterX = (canvasWidth / 2) + (canvasWidth * (localOffset.dx / 1000.0));
+          final double customCenterY = (canvasHeight * 0.5) + (canvasHeight * (localOffset.dy / 2000.0));
 
           Widget itemWidget = Padding(
             padding: EdgeInsets.symmetric(horizontal: 16 * textScale),
@@ -507,8 +613,22 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
           );
 
           if (!widget.isExporting && vm != null) {
+            final isSelected = vm.selectedElementId == item.id || vm.selectedTextId == item.id;
             final isHovering = _hoveringCustomTextId == item.id;
             final isDragging = _draggingCustomTextId == item.id;
+
+            itemWidget = Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: (isSelected || isHovering || isDragging) ? AppColors.primary : Colors.transparent,
+                  width: (isSelected || isHovering || isDragging) ? 2.0 : 0.0,
+                ),
+                borderRadius: BorderRadius.circular(6),
+                color: (isSelected || isHovering || isDragging) ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
+              ),
+              child: itemWidget,
+            );
 
             itemWidget = MouseRegion(
               cursor: SystemMouseCursors.move,
@@ -517,14 +637,15 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
               child: _EagerPanDetector(
                 onPanStart: (_) {
                   vm.selectScreenshot(widget.itemIndex);
+                  vm.selectElement(item.id);
                   setState(() {
                     _draggingCustomTextId = item.id;
                     _localCustomTextOffsets[item.id] = Offset(item.offsetX, item.offsetY);
                   });
                 },
                 onPanUpdate: (details) {
-                  final double dx = details.delta.dx / textScale;
-                  final double dy = details.delta.dy / textScale;
+                  final double dx = (details.delta.dx / canvasWidth) * 1000.0;
+                  final double dy = (details.delta.dy / canvasHeight) * 2000.0;
                   final current = _localCustomTextOffsets[item.id] ?? Offset(item.offsetX, item.offsetY);
                   setState(() {
                     _localCustomTextOffsets[item.id] = Offset(current.dx + dx, current.dy + dy);
@@ -546,29 +667,18 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
                     _localCustomTextOffsets.remove(item.id);
                   });
                 },
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: (isHovering || isDragging) ? AppColors.primary : Colors.transparent,
-                      width: (isHovering || isDragging) ? 2.0 : 1.0,
-                    ),
-                    borderRadius: BorderRadius.circular(6),
-                    color: (isHovering || isDragging) ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
-                  ),
-                  child: itemWidget,
-                ),
+                child: itemWidget,
               ),
             );
           }
 
           return Positioned(
-            top: customY,
-            left: 20 * textScale,
-            right: 20 * textScale,
-            child: Center(
-              child: Transform.translate(
-                offset: Offset(customX, 0),
+            left: customCenterX,
+            top: customCenterY,
+            child: FractionalTranslation(
+              translation: const Offset(-0.5, -0.5),
+              child: Transform.rotate(
+                angle: item.rotation * (pi / 180),
                 child: itemWidget,
               ),
             ),
@@ -577,18 +687,4 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
       ],
     );
   }
-
-  Widget _buildDeviceFrame(double scale) {
-    return DeviceFrameWidget(
-      frameStyle: widget.data.frameStyle,
-      screenshotBytes: widget.data.effectiveScreenshotBytes,
-      hasShadow: widget.data.hasShadow,
-      platform: widget.data.platform,
-      scale: scale,
-    );
-  }
 }
-
-
-
-

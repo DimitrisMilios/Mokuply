@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/constants/store_specs.dart';
+import 'canvas_device_item.dart';
+import 'canvas_image_item.dart';
 import 'canvas_text_item.dart';
 
-/// Pure immutable data model for a mockup template.
+/// Pure immutable data model for a mockup template screen.
 @immutable
 class TemplateData {
   final TargetPlatformType platform;
@@ -35,9 +37,13 @@ class TemplateData {
   final double textOffsetY; // Title Y offset
   final double subtitleOffsetX;
   final double subtitleOffsetY;
-  final List<CanvasTextItem> customTextItems;
   final double deviceRotation;
   final bool hasShadow;
+
+  /// Multi-Element Collections per Canvas Screen
+  final List<CanvasDeviceItem> devices;
+  final List<CanvasImageItem> customImageItems;
+  final List<CanvasTextItem> customTextItems;
 
   const TemplateData({
     this.platform = TargetPlatformType.appStore,
@@ -69,12 +75,14 @@ class TemplateData {
     this.textOffsetY = 0.0,
     this.subtitleOffsetX = 0.0,
     this.subtitleOffsetY = 0.0,
-    this.customTextItems = const [],
     this.deviceRotation = 0.0,
     this.hasShadow = true,
+    this.devices = const [],
+    this.customImageItems = const [],
+    this.customTextItems = const [],
   });
 
-  /// Computes effective screenshot bytes for active device model style (per-platform override or shared screenshot)
+  /// Computes effective screenshot bytes for active primary device model style
   Uint8List? get effectiveScreenshotBytes {
     if (frameStyle == DeviceFrameStyle.iphone16ProMax && iphoneScreenshotBytes != null) {
       return iphoneScreenshotBytes;
@@ -83,6 +91,25 @@ class TemplateData {
       return samsungScreenshotBytes;
     }
     return screenshotBytes;
+  }
+
+  /// Returns effective list of phone frames on this canvas screen.
+  /// If [devices] is non-empty, returns [devices].
+  /// Otherwise, falls back to a primary device frame constructed from top-level properties.
+  List<CanvasDeviceItem> get effectiveDevices {
+    if (devices.isNotEmpty) return devices;
+    return [
+      CanvasDeviceItem(
+        id: 'dev_primary',
+        frameStyle: frameStyle,
+        screenshotBytes: effectiveScreenshotBytes,
+        scale: deviceScale,
+        offsetX: deviceOffsetX,
+        offsetY: deviceOffsetY,
+        rotation: deviceRotation,
+        hasShadow: hasShadow,
+      ),
+    ];
   }
 
   TemplateData copyWith({
@@ -115,9 +142,11 @@ class TemplateData {
     double? textOffsetY,
     double? subtitleOffsetX,
     double? subtitleOffsetY,
-    List<CanvasTextItem>? customTextItems,
     double? deviceRotation,
     bool? hasShadow,
+    List<CanvasDeviceItem>? devices,
+    List<CanvasImageItem>? customImageItems,
+    List<CanvasTextItem>? customTextItems,
   }) {
     return TemplateData(
       platform: platform ?? this.platform,
@@ -149,10 +178,11 @@ class TemplateData {
       textOffsetY: textOffsetY ?? this.textOffsetY,
       subtitleOffsetX: subtitleOffsetX ?? this.subtitleOffsetX,
       subtitleOffsetY: subtitleOffsetY ?? this.subtitleOffsetY,
-      customTextItems: customTextItems ?? this.customTextItems,
       deviceRotation: deviceRotation ?? this.deviceRotation,
       hasShadow: hasShadow ?? this.hasShadow,
+      devices: devices ?? this.devices,
+      customImageItems: customImageItems ?? this.customImageItems,
+      customTextItems: customTextItems ?? this.customTextItems,
     );
   }
 }
-

@@ -5,6 +5,7 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/glass_container.dart';
 import '../panels/screenshot_panel.dart';
+import '../panels/image_panel.dart';
 import '../panels/layout_panel.dart';
 import '../panels/background_panel.dart';
 import '../panels/typography_panel.dart';
@@ -116,6 +117,8 @@ class _FloatingSidebarState extends State<FloatingSidebar> {
                         SizedBox(height: AppDimensions.spacingLg),
                         ScreenshotPanel(),
                         SizedBox(height: AppDimensions.spacingLg),
+                        ImagePanel(),
+                        SizedBox(height: AppDimensions.spacingLg),
                         LayoutPanel(),
                         SizedBox(height: AppDimensions.spacingLg),
                         BackgroundPanel(),
@@ -157,6 +160,12 @@ class _FloatingSidebarState extends State<FloatingSidebar> {
           onPressed: _toggleCollapsed,
           tooltip: 'Screenshots',
           icon: const Icon(Icons.image_outlined, color: AppColors.primary, size: 22),
+        ),
+        const SizedBox(height: 8),
+        IconButton(
+          onPressed: _toggleCollapsed,
+          tooltip: 'Custom Images',
+          icon: const Icon(Icons.add_photo_alternate_outlined, color: AppColors.primary, size: 22),
         ),
         const SizedBox(height: 8),
         IconButton(
