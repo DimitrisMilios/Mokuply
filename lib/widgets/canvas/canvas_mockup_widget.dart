@@ -221,12 +221,17 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
         break;
     }
 
-    // Effective positions for Title & Subtitle
-    final double effectiveTitleX = _localTitleX ?? data.textOffsetX;
-    final double effectiveTitleY = _localTitleY ?? data.textOffsetY;
+    // Effective positions for Title & Subtitle (per-platform)
+    final double titleOffsetX = data.textOffsetXFor(data.platform);
+    final double titleOffsetY = data.textOffsetYFor(data.platform);
+    final double subtitleOffsetX = data.subtitleOffsetXFor(data.platform);
+    final double subtitleOffsetY = data.subtitleOffsetYFor(data.platform);
 
-    final double effectiveSubtitleX = _localSubtitleX ?? data.subtitleOffsetX;
-    final double effectiveSubtitleY = _localSubtitleY ?? data.subtitleOffsetY;
+    final double effectiveTitleX = _localTitleX ?? titleOffsetX;
+    final double effectiveTitleY = _localTitleY ?? titleOffsetY;
+
+    final double effectiveSubtitleX = _localSubtitleX ?? subtitleOffsetX;
+    final double effectiveSubtitleY = _localSubtitleY ?? subtitleOffsetY;
 
     final double titleCenterX = (canvasWidth / 2) + (canvasWidth * (effectiveTitleX / 1000.0));
     final double titleCenterY = baseTitleCenterY + (canvasHeight * (effectiveTitleY / 2000.0));
@@ -279,16 +284,16 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
             vm.selectElement('title');
             setState(() {
               _isDraggingTitle = true;
-              _localTitleX = data.textOffsetX;
-              _localTitleY = data.textOffsetY;
+              _localTitleX = titleOffsetX;
+              _localTitleY = titleOffsetY;
             });
           },
           onPanUpdate: (details) {
             final double dx = (details.delta.dx / canvasWidth) * 1000.0;
             final double dy = (details.delta.dy / canvasHeight) * 2000.0;
             setState(() {
-              _localTitleX = (_localTitleX ?? data.textOffsetX) + dx;
-              _localTitleY = (_localTitleY ?? data.textOffsetY) + dy;
+              _localTitleX = (_localTitleX ?? titleOffsetX) + dx;
+              _localTitleY = (_localTitleY ?? titleOffsetY) + dy;
             });
           },
           onPanEnd: (_) {
@@ -334,16 +339,16 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
             vm.selectElement('subtitle');
             setState(() {
               _isDraggingSubtitle = true;
-              _localSubtitleX = data.subtitleOffsetX;
-              _localSubtitleY = data.subtitleOffsetY;
+              _localSubtitleX = subtitleOffsetX;
+              _localSubtitleY = subtitleOffsetY;
             });
           },
           onPanUpdate: (details) {
             final double dx = (details.delta.dx / canvasWidth) * 1000.0;
             final double dy = (details.delta.dy / canvasHeight) * 2000.0;
             setState(() {
-              _localSubtitleX = (_localSubtitleX ?? data.subtitleOffsetX) + dx;
-              _localSubtitleY = (_localSubtitleY ?? data.subtitleOffsetY) + dy;
+              _localSubtitleX = (_localSubtitleX ?? subtitleOffsetX) + dx;
+              _localSubtitleY = (_localSubtitleY ?? subtitleOffsetY) + dy;
             });
           },
           onPanEnd: (_) {
@@ -384,7 +389,11 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
       children: [
         // --- 1. MULTI-DEVICE FRAMES LAYER ---
         ...data.effectiveDevices.map((device) {
-          final Offset localOffset = _localDeviceOffsets[device.id] ?? Offset(device.offsetX, device.offsetY);
+          final double devOffsetX = device.offsetXFor(data.platform);
+          final double devOffsetY = device.offsetYFor(data.platform);
+          final double devScale = device.scaleFor(data.platform);
+
+          final Offset localOffset = _localDeviceOffsets[device.id] ?? Offset(devOffsetX, devOffsetY);
           final double devCenterX = (canvasWidth / 2) + (canvasWidth * (localOffset.dx / 1000.0));
           final double devCenterY = baseDeviceCenterY + (canvasHeight * (localOffset.dy / 2000.0));
 
@@ -424,13 +433,13 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
                   vm.selectDevice(device.id);
                   setState(() {
                     _draggingDeviceId = device.id;
-                    _localDeviceOffsets[device.id] = Offset(device.offsetX, device.offsetY);
+                    _localDeviceOffsets[device.id] = Offset(devOffsetX, devOffsetY);
                   });
                 },
                 onPanUpdate: (details) {
                   final double dx = (details.delta.dx / canvasWidth) * 1000.0;
                   final double dy = (details.delta.dy / canvasHeight) * 2000.0;
-                  final current = _localDeviceOffsets[device.id] ?? Offset(device.offsetX, device.offsetY);
+                  final current = _localDeviceOffsets[device.id] ?? Offset(devOffsetX, devOffsetY);
                   setState(() {
                     _localDeviceOffsets[device.id] = Offset(current.dx + dx, current.dy + dy);
                   });
@@ -464,7 +473,7 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
               child: Transform.rotate(
                 angle: device.rotation * (pi / 180),
                 child: Transform.scale(
-                  scale: device.scale * platformScaleCorrection * (data.layoutMode == LayoutMode.fullBleedHero ? 1.15 : 1.0),
+                  scale: devScale * platformScaleCorrection * (data.layoutMode == LayoutMode.fullBleedHero ? 1.15 : 1.0),
                   child: deviceFrameWidget,
                 ),
               ),
@@ -474,7 +483,11 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
 
         // --- 2. STANDALONE CUSTOM IMAGES LAYER ---
         ...data.customImageItems.map((imgItem) {
-          final Offset localOffset = _localImageOffsets[imgItem.id] ?? Offset(imgItem.offsetX, imgItem.offsetY);
+          final double imgOffsetX = imgItem.offsetXFor(data.platform);
+          final double imgOffsetY = imgItem.offsetYFor(data.platform);
+          final double imgScale = imgItem.scaleFor(data.platform);
+
+          final Offset localOffset = _localImageOffsets[imgItem.id] ?? Offset(imgOffsetX, imgOffsetY);
           final double imgCenterX = (canvasWidth / 2) + (canvasWidth * (localOffset.dx / 1000.0));
           final double imgCenterY = (canvasHeight * 0.5) + (canvasHeight * (localOffset.dy / 2000.0));
 
@@ -521,13 +534,13 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
                   vm.selectCustomImage(imgItem.id);
                   setState(() {
                     _draggingImageId = imgItem.id;
-                    _localImageOffsets[imgItem.id] = Offset(imgItem.offsetX, imgItem.offsetY);
+                    _localImageOffsets[imgItem.id] = Offset(imgOffsetX, imgOffsetY);
                   });
                 },
                 onPanUpdate: (details) {
                   final double dx = (details.delta.dx / canvasWidth) * 1000.0;
                   final double dy = (details.delta.dy / canvasHeight) * 2000.0;
-                  final current = _localImageOffsets[imgItem.id] ?? Offset(imgItem.offsetX, imgItem.offsetY);
+                  final current = _localImageOffsets[imgItem.id] ?? Offset(imgOffsetX, imgOffsetY);
                   setState(() {
                     _localImageOffsets[imgItem.id] = Offset(current.dx + dx, current.dy + dy);
                   });
@@ -561,7 +574,7 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
               child: Transform.rotate(
                 angle: imgItem.rotation * (pi / 180),
                 child: Transform.scale(
-                  scale: imgItem.scale * platformScaleCorrection,
+                  scale: imgScale * platformScaleCorrection,
                   child: imageWidget,
                 ),
               ),
@@ -593,7 +606,10 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
 
         // --- 5. EXTRA CUSTOM TEXT ELEMENTS LAYER ---
         ...data.customTextItems.map((item) {
-          final Offset localOffset = _localCustomTextOffsets[item.id] ?? Offset(item.offsetX, item.offsetY);
+          final double customOffsetX = item.offsetXFor(data.platform);
+          final double customOffsetY = item.offsetYFor(data.platform);
+
+          final Offset localOffset = _localCustomTextOffsets[item.id] ?? Offset(customOffsetX, customOffsetY);
           final double customCenterX = (canvasWidth / 2) + (canvasWidth * (localOffset.dx / 1000.0));
           final double customCenterY = (canvasHeight * 0.5) + (canvasHeight * (localOffset.dy / 2000.0));
 
@@ -640,13 +656,13 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
                   vm.selectElement(item.id);
                   setState(() {
                     _draggingCustomTextId = item.id;
-                    _localCustomTextOffsets[item.id] = Offset(item.offsetX, item.offsetY);
+                    _localCustomTextOffsets[item.id] = Offset(customOffsetX, customOffsetY);
                   });
                 },
                 onPanUpdate: (details) {
                   final double dx = (details.delta.dx / canvasWidth) * 1000.0;
                   final double dy = (details.delta.dy / canvasHeight) * 2000.0;
-                  final current = _localCustomTextOffsets[item.id] ?? Offset(item.offsetX, item.offsetY);
+                  final current = _localCustomTextOffsets[item.id] ?? Offset(customOffsetX, customOffsetY);
                   setState(() {
                     _localCustomTextOffsets[item.id] = Offset(current.dx + dx, current.dy + dy);
                   });

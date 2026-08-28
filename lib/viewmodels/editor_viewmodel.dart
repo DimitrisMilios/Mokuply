@@ -207,9 +207,31 @@ class EditorViewModel extends ChangeNotifier {
 
   void setDeviceFrameOffsetsForIndex(int index, String deviceId, double offsetX, double offsetY) {
     if (index >= 0 && index < _screenshots.length) {
+      final currentPlatform = _screenshots[index].platform;
       final currentList = _screenshots[index].effectiveDevices;
       final updatedList = currentList.map((d) {
-        return d.id == deviceId ? d.copyWith(offsetX: offsetX, offsetY: offsetY) : d;
+        if (d.id == deviceId) {
+          if (currentPlatform == TargetPlatformType.appStore) {
+            return d.copyWith(
+              offsetX: offsetX,
+              offsetY: offsetY,
+              appStoreOffsetX: offsetX,
+              appStoreOffsetY: offsetY,
+              googlePlayOffsetX: d.googlePlayOffsetX ?? offsetX,
+              googlePlayOffsetY: d.googlePlayOffsetY ?? offsetY,
+            );
+          } else {
+            return d.copyWith(
+              offsetX: offsetX,
+              offsetY: offsetY,
+              googlePlayOffsetX: offsetX,
+              googlePlayOffsetY: offsetY,
+              appStoreOffsetX: d.appStoreOffsetX ?? offsetX,
+              appStoreOffsetY: d.appStoreOffsetY ?? offsetY,
+            );
+          }
+        }
+        return d;
       }).toList();
       _screenshots[index] = _screenshots[index].copyWith(devices: updatedList);
       notifyListeners();
@@ -304,9 +326,31 @@ class EditorViewModel extends ChangeNotifier {
 
   void setCustomImageOffsetsForIndex(int index, String imageId, double offsetX, double offsetY) {
     if (index >= 0 && index < _screenshots.length) {
+      final currentPlatform = _screenshots[index].platform;
       final currentList = _screenshots[index].customImageItems;
       final updatedList = currentList.map((i) {
-        return i.id == imageId ? i.copyWith(offsetX: offsetX, offsetY: offsetY) : i;
+        if (i.id == imageId) {
+          if (currentPlatform == TargetPlatformType.appStore) {
+            return i.copyWith(
+              offsetX: offsetX,
+              offsetY: offsetY,
+              appStoreOffsetX: offsetX,
+              appStoreOffsetY: offsetY,
+              googlePlayOffsetX: i.googlePlayOffsetX ?? offsetX,
+              googlePlayOffsetY: i.googlePlayOffsetY ?? offsetY,
+            );
+          } else {
+            return i.copyWith(
+              offsetX: offsetX,
+              offsetY: offsetY,
+              googlePlayOffsetX: offsetX,
+              googlePlayOffsetY: offsetY,
+              appStoreOffsetX: i.appStoreOffsetX ?? offsetX,
+              appStoreOffsetY: i.appStoreOffsetY ?? offsetY,
+            );
+          }
+        }
+        return i;
       }).toList();
       _screenshots[index] = _screenshots[index].copyWith(customImageItems: updatedList);
       notifyListeners();
@@ -388,7 +432,26 @@ class EditorViewModel extends ChangeNotifier {
 
   void setTextOffsetsForIndex(int index, double offsetX, double offsetY) {
     if (index >= 0 && index < _screenshots.length) {
-      _screenshots[index] = _screenshots[index].copyWith(textOffsetX: offsetX, textOffsetY: offsetY);
+      final p = _screenshots[index].platform;
+      if (p == TargetPlatformType.appStore) {
+        _screenshots[index] = _screenshots[index].copyWith(
+          textOffsetX: offsetX,
+          textOffsetY: offsetY,
+          appStoreTextOffsetX: offsetX,
+          appStoreTextOffsetY: offsetY,
+          googlePlayTextOffsetX: _screenshots[index].googlePlayTextOffsetX ?? offsetX,
+          googlePlayTextOffsetY: _screenshots[index].googlePlayTextOffsetY ?? offsetY,
+        );
+      } else {
+        _screenshots[index] = _screenshots[index].copyWith(
+          textOffsetX: offsetX,
+          textOffsetY: offsetY,
+          googlePlayTextOffsetX: offsetX,
+          googlePlayTextOffsetY: offsetY,
+          appStoreTextOffsetX: _screenshots[index].appStoreTextOffsetX ?? offsetX,
+          appStoreTextOffsetY: _screenshots[index].appStoreTextOffsetY ?? offsetY,
+        );
+      }
       notifyListeners();
     }
   }
@@ -399,14 +462,42 @@ class EditorViewModel extends ChangeNotifier {
 
   void setSubtitleOffsetsForIndex(int index, double offsetX, double offsetY) {
     if (index >= 0 && index < _screenshots.length) {
-      _screenshots[index] = _screenshots[index].copyWith(subtitleOffsetX: offsetX, subtitleOffsetY: offsetY);
+      final p = _screenshots[index].platform;
+      if (p == TargetPlatformType.appStore) {
+        _screenshots[index] = _screenshots[index].copyWith(
+          subtitleOffsetX: offsetX,
+          subtitleOffsetY: offsetY,
+          appStoreSubtitleOffsetX: offsetX,
+          appStoreSubtitleOffsetY: offsetY,
+          googlePlaySubtitleOffsetX: _screenshots[index].googlePlaySubtitleOffsetX ?? offsetX,
+          googlePlaySubtitleOffsetY: _screenshots[index].googlePlaySubtitleOffsetY ?? offsetY,
+        );
+      } else {
+        _screenshots[index] = _screenshots[index].copyWith(
+          subtitleOffsetX: offsetX,
+          subtitleOffsetY: offsetY,
+          googlePlaySubtitleOffsetX: offsetX,
+          googlePlaySubtitleOffsetY: offsetY,
+          appStoreSubtitleOffsetX: _screenshots[index].appStoreSubtitleOffsetX ?? offsetX,
+          appStoreSubtitleOffsetY: _screenshots[index].appStoreSubtitleOffsetY ?? offsetY,
+        );
+      }
       notifyListeners();
     }
   }
 
   void resetCanvasOffsets() {
     final resetDevices = data.effectiveDevices.map((d) {
-      return d.copyWith(offsetX: 0.0, offsetY: 0.0, rotation: 0.0, scale: 0.85);
+      return d.copyWith(
+        offsetX: 0.0,
+        offsetY: 0.0,
+        rotation: 0.0,
+        scale: 0.85,
+        appStoreOffsetX: 0.0,
+        appStoreOffsetY: 0.0,
+        googlePlayOffsetX: 0.0,
+        googlePlayOffsetY: 0.0,
+      );
     }).toList();
 
     _updateCurrentScreenshot(data.copyWith(
@@ -417,6 +508,14 @@ class EditorViewModel extends ChangeNotifier {
       textOffsetY: 0.0,
       subtitleOffsetX: 0.0,
       subtitleOffsetY: 0.0,
+      appStoreTextOffsetX: 0.0,
+      appStoreTextOffsetY: 0.0,
+      googlePlayTextOffsetX: 0.0,
+      googlePlayTextOffsetY: 0.0,
+      appStoreSubtitleOffsetX: 0.0,
+      appStoreSubtitleOffsetY: 0.0,
+      googlePlaySubtitleOffsetX: 0.0,
+      googlePlaySubtitleOffsetY: 0.0,
       deviceRotation: 0.0,
       deviceScale: 0.85,
     ));
@@ -462,9 +561,31 @@ class EditorViewModel extends ChangeNotifier {
 
   void setCustomTextElementOffsetsForIndex(int index, String id, double offsetX, double offsetY) {
     if (index >= 0 && index < _screenshots.length) {
+      final currentPlatform = _screenshots[index].platform;
       final currentList = _screenshots[index].customTextItems;
       final updatedList = currentList.map((item) {
-        return item.id == id ? item.copyWith(offsetX: offsetX, offsetY: offsetY) : item;
+        if (item.id == id) {
+          if (currentPlatform == TargetPlatformType.appStore) {
+            return item.copyWith(
+              offsetX: offsetX,
+              offsetY: offsetY,
+              appStoreOffsetX: offsetX,
+              appStoreOffsetY: offsetY,
+              googlePlayOffsetX: item.googlePlayOffsetX ?? offsetX,
+              googlePlayOffsetY: item.googlePlayOffsetY ?? offsetY,
+            );
+          } else {
+            return item.copyWith(
+              offsetX: offsetX,
+              offsetY: offsetY,
+              googlePlayOffsetX: offsetX,
+              googlePlayOffsetY: offsetY,
+              appStoreOffsetX: item.appStoreOffsetX ?? offsetX,
+              appStoreOffsetY: item.appStoreOffsetY ?? offsetY,
+            );
+          }
+        }
+        return item;
       }).toList();
       _screenshots[index] = _screenshots[index].copyWith(customTextItems: updatedList);
       notifyListeners();

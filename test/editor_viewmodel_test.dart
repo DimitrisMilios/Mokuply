@@ -88,5 +88,26 @@ void main() {
       vm.setPlatform(TargetPlatformType.appStore);
       expect(vm.selectedDevice?.frameStyle, equals(DeviceFrameStyle.iphone16ProMax));
     });
+
+    test('per-platform offsets store independently for Apple App Store and Google Play Store', () {
+      final devId = vm.selectedDevice!.id;
+
+      // Set Apple App Store offset
+      vm.setPlatform(TargetPlatformType.appStore);
+      vm.setDeviceFrameOffsetsForIndex(0, devId, 150.0, 250.0);
+      expect(vm.devices.first.offsetXFor(TargetPlatformType.appStore), equals(150.0));
+      expect(vm.devices.first.offsetYFor(TargetPlatformType.appStore), equals(250.0));
+
+      // Switch to Google Play and set independent offset
+      vm.setPlatform(TargetPlatformType.googlePlay);
+      vm.setDeviceFrameOffsetsForIndex(0, devId, -80.0, 90.0);
+      expect(vm.devices.first.offsetXFor(TargetPlatformType.googlePlay), equals(-80.0));
+      expect(vm.devices.first.offsetYFor(TargetPlatformType.googlePlay), equals(90.0));
+
+      // Switch back to Apple App Store and verify original offset is preserved
+      vm.setPlatform(TargetPlatformType.appStore);
+      expect(vm.devices.first.offsetXFor(TargetPlatformType.appStore), equals(150.0));
+      expect(vm.devices.first.offsetYFor(TargetPlatformType.appStore), equals(250.0));
+    });
   });
 }

@@ -77,10 +77,40 @@ class TemplateData {
     this.subtitleOffsetY = 0.0,
     this.deviceRotation = 0.0,
     this.hasShadow = true,
+    this.appStoreTextOffsetX,
+    this.appStoreTextOffsetY,
+    this.googlePlayTextOffsetX,
+    this.googlePlayTextOffsetY,
+    this.appStoreSubtitleOffsetX,
+    this.appStoreSubtitleOffsetY,
+    this.googlePlaySubtitleOffsetX,
+    this.googlePlaySubtitleOffsetY,
     this.devices = const [],
     this.customImageItems = const [],
     this.customTextItems = const [],
   });
+
+  final double? appStoreTextOffsetX;
+  final double? appStoreTextOffsetY;
+  final double? googlePlayTextOffsetX;
+  final double? googlePlayTextOffsetY;
+
+  final double? appStoreSubtitleOffsetX;
+  final double? appStoreSubtitleOffsetY;
+  final double? googlePlaySubtitleOffsetX;
+  final double? googlePlaySubtitleOffsetY;
+
+  double textOffsetXFor(TargetPlatformType p) =>
+      p == TargetPlatformType.appStore ? (appStoreTextOffsetX ?? textOffsetX) : (googlePlayTextOffsetX ?? textOffsetX);
+
+  double textOffsetYFor(TargetPlatformType p) =>
+      p == TargetPlatformType.appStore ? (appStoreTextOffsetY ?? textOffsetY) : (googlePlayTextOffsetY ?? textOffsetY);
+
+  double subtitleOffsetXFor(TargetPlatformType p) =>
+      p == TargetPlatformType.appStore ? (appStoreSubtitleOffsetX ?? subtitleOffsetX) : (googlePlaySubtitleOffsetX ?? subtitleOffsetX);
+
+  double subtitleOffsetYFor(TargetPlatformType p) =>
+      p == TargetPlatformType.appStore ? (appStoreSubtitleOffsetY ?? subtitleOffsetY) : (googlePlaySubtitleOffsetY ?? subtitleOffsetY);
 
   /// Computes effective screenshot bytes for active primary device model style
   Uint8List? get effectiveScreenshotBytes {
@@ -144,6 +174,14 @@ class TemplateData {
     double? subtitleOffsetY,
     double? deviceRotation,
     bool? hasShadow,
+    double? appStoreTextOffsetX,
+    double? appStoreTextOffsetY,
+    double? googlePlayTextOffsetX,
+    double? googlePlayTextOffsetY,
+    double? appStoreSubtitleOffsetX,
+    double? appStoreSubtitleOffsetY,
+    double? googlePlaySubtitleOffsetX,
+    double? googlePlaySubtitleOffsetY,
     List<CanvasDeviceItem>? devices,
     List<CanvasImageItem>? customImageItems,
     List<CanvasTextItem>? customTextItems,
@@ -180,6 +218,14 @@ class TemplateData {
       subtitleOffsetY: subtitleOffsetY ?? this.subtitleOffsetY,
       deviceRotation: deviceRotation ?? this.deviceRotation,
       hasShadow: hasShadow ?? this.hasShadow,
+      appStoreTextOffsetX: appStoreTextOffsetX ?? this.appStoreTextOffsetX,
+      appStoreTextOffsetY: appStoreTextOffsetY ?? this.appStoreTextOffsetY,
+      googlePlayTextOffsetX: googlePlayTextOffsetX ?? this.googlePlayTextOffsetX,
+      googlePlayTextOffsetY: googlePlayTextOffsetY ?? this.googlePlayTextOffsetY,
+      appStoreSubtitleOffsetX: appStoreSubtitleOffsetX ?? this.appStoreSubtitleOffsetX,
+      appStoreSubtitleOffsetY: appStoreSubtitleOffsetY ?? this.appStoreSubtitleOffsetY,
+      googlePlaySubtitleOffsetX: googlePlaySubtitleOffsetX ?? this.googlePlaySubtitleOffsetX,
+      googlePlaySubtitleOffsetY: googlePlaySubtitleOffsetY ?? this.googlePlaySubtitleOffsetY,
       devices: devices ?? this.devices,
       customImageItems: customImageItems ?? this.customImageItems,
       customTextItems: customTextItems ?? this.customTextItems,
