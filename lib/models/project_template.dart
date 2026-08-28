@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/constants/store_specs.dart';
+import 'canvas_device_item.dart';
 import 'template_data.dart';
 
 /// Preset Project Template definition for the Store landing page.
@@ -196,8 +197,185 @@ class ProjectTemplate {
     );
   }
 
+  /// Productivity & Team Task Organization 6-Screenshot Suite (Matching screenshots)
+  static ProjectTemplate teamOrganize() {
+    return ProjectTemplate(
+      id: 'team_organize',
+      title: 'Team Task & Workflow Hub',
+      category: 'Productivity',
+      description: 'App Store showcase featuring angled hero mockups, board tables, messaging, and calendar scheduling.',
+      previewGradient: const [Color(0xFFEFF6FF), Color(0xFFDBEAFE), Color(0xFF3B82F6)],
+      platform: TargetPlatformType.appStore,
+      initialScreenshots: [
+        // 1. SCREEN 1: LEFT CARD WITH MAIN PHONE + BACKGROUND OVERLAPPING PHONE
+        const TemplateData(
+          titleText: 'Organize',
+          subtitleText: 'Your company.',
+          titleFont: 'Outfit',
+          subtitleFont: 'Inter',
+          titleSize: 68.0,
+          subtitleSize: 34.0,
+          titleWeight: FontWeight.w800,
+          subtitleWeight: FontWeight.w700,
+          textColor: Color(0xFF1D4ED8),
+          subtitleColor: Color(0xFF0F172A),
+          titleAlignment: TextAlign.left,
+          subtitleAlignment: TextAlign.left,
+          textOffsetX: -140.0,
+          textOffsetY: -60.0,
+          subtitleOffsetX: -140.0,
+          subtitleOffsetY: -40.0,
+          selectedGradientIndex: 5,
+          customGradientColors: [Color(0xFFF8FAFC), Color(0xFFEEF2F6), Color(0xFFE2E8F0)],
+          layoutMode: LayoutMode.angledLeftHero,
+          devices: [
+            // Background Phone 2 (left edge entering from the right)
+            CanvasDeviceItem(
+              id: 'dev_screen1_peer',
+              frameStyle: DeviceFrameStyle.iphone16ProMax,
+              scale: 1.28,
+              offsetX: 940.0,
+              offsetY: -60.0,
+              rotation: -22.0,
+              hasShadow: true,
+            ),
+            // Foreground Main Phone 1 (Tilted left, full phone)
+            CanvasDeviceItem(
+              id: 'dev_screen1_main',
+              frameStyle: DeviceFrameStyle.iphone16ProMax,
+              scale: 0.92,
+              offsetX: -120.0,
+              offsetY: 280.0,
+              rotation: -22.0,
+              hasShadow: true,
+            ),
+          ],
+        ),
+        // 2. SCREEN 2: RIGHT CARD WITH HERO MAIN PHONE + OVERLAPPING CORNER FROM PHONE 1
+        const TemplateData(
+          titleText: '',
+          subtitleText: '',
+          selectedGradientIndex: 5,
+          customGradientColors: [Color(0xFFF8FAFC), Color(0xFFEEF2F6), Color(0xFFE2E8F0)],
+          layoutMode: LayoutMode.angledLeftHero,
+          devices: [
+            // Background Phone 1 corner (entering from the left edge)
+            CanvasDeviceItem(
+              id: 'dev_screen2_peer',
+              frameStyle: DeviceFrameStyle.iphone16ProMax,
+              scale: 0.92,
+              offsetX: -1120.0,
+              offsetY: 280.0,
+              rotation: -22.0,
+              hasShadow: true,
+            ),
+            // Foreground Main Phone 2 (Large hero zoomed-in phone, tilted -22°)
+            CanvasDeviceItem(
+              id: 'dev_screen2_main',
+              frameStyle: DeviceFrameStyle.iphone16ProMax,
+              scale: 1.28,
+              offsetX: -60.0,
+              offsetY: -60.0,
+              rotation: -22.0,
+              hasShadow: true,
+            ),
+          ],
+        ),
+        // 3. SCREEN 3: MESSAGES
+        const TemplateData(
+          titleText: 'Stay',
+          subtitleText: 'connected',
+          titleFont: 'Outfit',
+          subtitleFont: 'Inter',
+          titleSize: 68.0,
+          subtitleSize: 34.0,
+          titleWeight: FontWeight.w800,
+          subtitleWeight: FontWeight.w700,
+          textColor: Color(0xFF1D4ED8),
+          subtitleColor: Color(0xFF0F172A),
+          selectedGradientIndex: 5,
+          customGradientColors: [Color(0xFFF8FAFC), Color(0xFFEEF2F6), Color(0xFFE2E8F0)],
+          layoutMode: LayoutMode.titleTopDeviceBottom,
+          deviceRotation: 0.0,
+          deviceScale: 0.88,
+          deviceOffsetX: 0.0,
+          deviceOffsetY: 240.0,
+          textOffsetY: -60.0,
+          subtitleOffsetY: -50.0,
+        ),
+        // 4. SCREEN 4: EDIT CAMPAIGNS
+        const TemplateData(
+          titleText: 'Edit',
+          subtitleText: 'campaigns',
+          titleFont: 'Outfit',
+          subtitleFont: 'Inter',
+          titleSize: 68.0,
+          subtitleSize: 34.0,
+          titleWeight: FontWeight.w800,
+          subtitleWeight: FontWeight.w700,
+          textColor: Color(0xFF1D4ED8),
+          subtitleColor: Color(0xFF0F172A),
+          selectedGradientIndex: 5,
+          customGradientColors: [Color(0xFFF8FAFC), Color(0xFFEEF2F6), Color(0xFFE2E8F0)],
+          layoutMode: LayoutMode.titleTopDeviceBottom,
+          deviceRotation: 0.0,
+          deviceScale: 0.88,
+          deviceOffsetX: 0.0,
+          deviceOffsetY: 240.0,
+          textOffsetY: -60.0,
+          subtitleOffsetY: -50.0,
+        ),
+        // 5. SCREEN 5: KEEP SCHEDULE
+        const TemplateData(
+          titleText: 'Keep',
+          subtitleText: 'your schedule',
+          titleFont: 'Outfit',
+          subtitleFont: 'Inter',
+          titleSize: 68.0,
+          subtitleSize: 34.0,
+          titleWeight: FontWeight.w800,
+          subtitleWeight: FontWeight.w700,
+          textColor: Color(0xFF1D4ED8),
+          subtitleColor: Color(0xFF0F172A),
+          selectedGradientIndex: 5,
+          customGradientColors: [Color(0xFFF8FAFC), Color(0xFFEEF2F6), Color(0xFFE2E8F0)],
+          layoutMode: LayoutMode.titleTopDeviceBottom,
+          deviceRotation: 0.0,
+          deviceScale: 0.88,
+          deviceOffsetX: 0.0,
+          deviceOffsetY: 240.0,
+          textOffsetY: -60.0,
+          subtitleOffsetY: -50.0,
+        ),
+        // 6. SCREEN 6: TRACK SUCCESS
+        const TemplateData(
+          titleText: 'Track',
+          subtitleText: 'success',
+          titleFont: 'Outfit',
+          subtitleFont: 'Inter',
+          titleSize: 68.0,
+          subtitleSize: 34.0,
+          titleWeight: FontWeight.w800,
+          subtitleWeight: FontWeight.w700,
+          textColor: Color(0xFF1D4ED8),
+          subtitleColor: Color(0xFF0F172A),
+          selectedGradientIndex: 5,
+          customGradientColors: [Color(0xFFF8FAFC), Color(0xFFEEF2F6), Color(0xFFE2E8F0)],
+          layoutMode: LayoutMode.titleTopDeviceBottom,
+          deviceRotation: 0.0,
+          deviceScale: 0.88,
+          deviceOffsetX: 0.0,
+          deviceOffsetY: 240.0,
+          textOffsetY: -60.0,
+          subtitleOffsetY: -50.0,
+        ),
+      ],
+    );
+  }
+
   /// List of all available store templates
   static List<ProjectTemplate> get allTemplates => [
+        teamOrganize(),
         saasModern(),
         minimalistClean(),
         sunsetGlow(),

@@ -32,6 +32,8 @@ enum TargetPlatformType {
 }
 
 enum LayoutMode {
+  angledLeftHero('Angled Left Hero', 'Top headline with phone tilted left (-15°)'),
+  angledRightHero('Angled Right Hero', 'Top headline with phone tilted right (+15°)'),
   titleTopDeviceBottom('Top Headline + Bottom Device', 'Classic store layout with headline above'),
   titleBottomDeviceTop('Top Device + Bottom Headline', 'Modern layout with headline at the bottom'),
   deviceCentered('Centered Frame', 'Minimalist spotlight on the app screenshot'),

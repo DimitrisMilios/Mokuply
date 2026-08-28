@@ -14,7 +14,7 @@ import '../widgets/canvas/canvas_mockup_widget.dart';
 class EditorViewModel extends ChangeNotifier {
   bool _isHomeScreen = true;
   ProjectTemplate? _activeTemplate;
-  List<TemplateData> _screenshots = ProjectTemplate.saasModern().initialScreenshots;
+  List<TemplateData> _screenshots = ProjectTemplate.teamOrganize().initialScreenshots;
   int _selectedIndex = 0;
 
   // Selected element tracking on active canvas screen
@@ -679,7 +679,7 @@ class EditorViewModel extends ChangeNotifier {
   }
 
   void openEditorWithNewProject() {
-    _activeTemplate = ProjectTemplate.saasModern();
+    _activeTemplate = ProjectTemplate.teamOrganize();
     _screenshots = List.from(_activeTemplate!.initialScreenshots);
     _selectedIndex = 0;
     _isHomeScreen = false;
@@ -774,7 +774,50 @@ class EditorViewModel extends ChangeNotifier {
   }
 
   void setLayoutMode(LayoutMode mode) {
-    _updateCurrentScreenshot(data.copyWith(layoutMode: mode));
+    double targetRotation = data.deviceRotation;
+    double targetScale = data.deviceScale;
+    double targetOffsetY = data.deviceOffsetY;
+
+    switch (mode) {
+      case LayoutMode.angledLeftHero:
+        targetRotation = -15.0;
+        targetScale = 0.94;
+        targetOffsetY = 280.0;
+        break;
+      case LayoutMode.angledRightHero:
+        targetRotation = 15.0;
+        targetScale = 0.94;
+        targetOffsetY = 260.0;
+        break;
+      case LayoutMode.fullBleedHero:
+        targetRotation = 0.0;
+        targetScale = 1.0;
+        targetOffsetY = 0.0;
+        break;
+      case LayoutMode.titleTopDeviceBottom:
+      case LayoutMode.titleBottomDeviceTop:
+      case LayoutMode.deviceCentered:
+        targetRotation = 0.0;
+        targetScale = 0.85;
+        targetOffsetY = 0.0;
+        break;
+    }
+
+    final updatedDevices = data.effectiveDevices.map((d) {
+      return d.copyWith(
+        rotation: targetRotation,
+        scale: targetScale,
+        offsetY: targetOffsetY,
+      );
+    }).toList();
+
+    _updateCurrentScreenshot(data.copyWith(
+      layoutMode: mode,
+      deviceRotation: targetRotation,
+      deviceScale: targetScale,
+      deviceOffsetY: targetOffsetY,
+      devices: updatedDevices,
+    ));
   }
 
   void setFrameStyle(DeviceFrameStyle style) {

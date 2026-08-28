@@ -43,39 +43,52 @@ class TemplateCard extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
-                      children: List.generate(6, (i) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          width: 44,
-                          height: 90,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 24,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  borderRadius: BorderRadius.circular(2),
+                      children: List.generate(template.initialScreenshots.length, (i) {
+                        final screenData = template.initialScreenshots[i];
+                        final isRotatedLeft = screenData.deviceRotation < -5;
+                        final isRotatedRight = screenData.deviceRotation > 5;
+                        return Transform.rotate(
+                          angle: isRotatedLeft ? -0.12 : (isRotatedRight ? 0.12 : 0.0),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: 44,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.22),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Container(
-                                width: 28,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 24,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
                                 ),
-                                child: const Icon(Icons.phone_iphone_rounded, size: 14, color: Colors.white),
-                              ),
-                            ],
+                                const SizedBox(height: 6),
+                                Container(
+                                  width: 28,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.35),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+                                  ),
+                                  child: const Icon(Icons.phone_iphone_rounded, size: 14, color: Colors.white),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       }),

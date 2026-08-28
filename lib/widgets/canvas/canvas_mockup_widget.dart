@@ -199,6 +199,8 @@ class _CanvasMockupWidgetState extends State<CanvasMockupWidget> {
     double baseDeviceCenterY = canvasHeight * 0.62;
 
     switch (data.layoutMode) {
+      case LayoutMode.angledLeftHero:
+      case LayoutMode.angledRightHero:
       case LayoutMode.titleTopDeviceBottom:
         baseTitleCenterY = canvasHeight * 0.08;
         baseSubtitleCenterY = canvasHeight * 0.17;
