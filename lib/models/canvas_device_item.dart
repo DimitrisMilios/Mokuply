@@ -96,6 +96,45 @@ class CanvasDeviceItem {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'frameStyle': frameStyle.name,
+      'scale': scale,
+      'offsetX': offsetX,
+      'offsetY': offsetY,
+      'rotation': rotation,
+      'hasShadow': hasShadow,
+      'appStoreOffsetX': appStoreOffsetX,
+      'appStoreOffsetY': appStoreOffsetY,
+      'appStoreScale': appStoreScale,
+      'googlePlayOffsetX': googlePlayOffsetX,
+      'googlePlayOffsetY': googlePlayOffsetY,
+      'googlePlayScale': googlePlayScale,
+    };
+  }
+
+  factory CanvasDeviceItem.fromJson(Map<String, dynamic> json) {
+    return CanvasDeviceItem(
+      id: json['id'] as String? ?? 'dev_${DateTime.now().millisecondsSinceEpoch}',
+      frameStyle: DeviceFrameStyle.values.firstWhere(
+        (e) => e.name == json['frameStyle'],
+        orElse: () => DeviceFrameStyle.iphone16ProMax,
+      ),
+      scale: (json['scale'] as num?)?.toDouble() ?? 0.85,
+      offsetX: (json['offsetX'] as num?)?.toDouble() ?? 0.0,
+      offsetY: (json['offsetY'] as num?)?.toDouble() ?? 0.0,
+      rotation: (json['rotation'] as num?)?.toDouble() ?? 0.0,
+      hasShadow: json['hasShadow'] as bool? ?? true,
+      appStoreOffsetX: (json['appStoreOffsetX'] as num?)?.toDouble(),
+      appStoreOffsetY: (json['appStoreOffsetY'] as num?)?.toDouble(),
+      appStoreScale: (json['appStoreScale'] as num?)?.toDouble(),
+      googlePlayOffsetX: (json['googlePlayOffsetX'] as num?)?.toDouble(),
+      googlePlayOffsetY: (json['googlePlayOffsetY'] as num?)?.toDouble(),
+      googlePlayScale: (json['googlePlayScale'] as num?)?.toDouble(),
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

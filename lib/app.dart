@@ -12,7 +12,7 @@ class MocuplyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => EditorViewModel(),
+      create: (_) => EditorViewModel()..initStorage(),
       child: MaterialApp(
         title: 'Mocuply — Free App Mockup Generator',
         debugShowCheckedModeBanner: false,

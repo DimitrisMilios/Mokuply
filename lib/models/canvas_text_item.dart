@@ -87,4 +87,48 @@ class CanvasTextItem {
       googlePlayOffsetY: googlePlayOffsetY ?? this.googlePlayOffsetY,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'text': text,
+      'font': font,
+      'fontSize': fontSize,
+      'color': color.toARGB32(),
+      'weightIndex': FontWeight.values.indexOf(weight),
+      'alignment': alignment.name,
+      'offsetX': offsetX,
+      'offsetY': offsetY,
+      'rotation': rotation,
+      'appStoreOffsetX': appStoreOffsetX,
+      'appStoreOffsetY': appStoreOffsetY,
+      'googlePlayOffsetX': googlePlayOffsetX,
+      'googlePlayOffsetY': googlePlayOffsetY,
+    };
+  }
+
+  factory CanvasTextItem.fromJson(Map<String, dynamic> json) {
+    final weightIdx = json['weightIndex'] as int? ?? 5;
+    return CanvasTextItem(
+      id: json['id'] as String? ?? 'txt_${DateTime.now().millisecondsSinceEpoch}',
+      text: json['text'] as String? ?? '',
+      font: json['font'] as String? ?? 'Outfit',
+      fontSize: (json['fontSize'] as num?)?.toDouble() ?? 32.0,
+      color: Color(json['color'] as int? ?? 0xFFFFFFFF),
+      weight: (weightIdx >= 0 && weightIdx < FontWeight.values.length)
+          ? FontWeight.values[weightIdx]
+          : FontWeight.w600,
+      alignment: TextAlign.values.firstWhere(
+        (e) => e.name == json['alignment'],
+        orElse: () => TextAlign.center,
+      ),
+      offsetX: (json['offsetX'] as num?)?.toDouble() ?? 0.0,
+      offsetY: (json['offsetY'] as num?)?.toDouble() ?? 0.0,
+      rotation: (json['rotation'] as num?)?.toDouble() ?? 0.0,
+      appStoreOffsetX: (json['appStoreOffsetX'] as num?)?.toDouble(),
+      appStoreOffsetY: (json['appStoreOffsetY'] as num?)?.toDouble(),
+      googlePlayOffsetX: (json['googlePlayOffsetX'] as num?)?.toDouble(),
+      googlePlayOffsetY: (json['googlePlayOffsetY'] as num?)?.toDouble(),
+    );
+  }
 }

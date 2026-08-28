@@ -6,6 +6,7 @@ import '../../../core/constants/store_specs.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/glass_container.dart';
 import 'export_modal_dialog.dart';
+import 'template_builder_dialog.dart';
 
 /// Top header navigation bar for EditorView (Floating Glass Bar).
 class EditorNavbar extends StatelessWidget {
@@ -121,7 +122,21 @@ class EditorNavbar extends StatelessWidget {
             icon: const Icon(Icons.refresh_rounded, size: 18, color: AppColors.textPrimary),
             label: const Text('Reset Set', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
           ),
-          const SizedBox(width: AppDimensions.spacingLg),
+          const SizedBox(width: AppDimensions.spacingMd),
+
+          // Save / Export Template Builder Button
+          OutlinedButton.icon(
+            onPressed: () => TemplateBuilderDialog.show(context),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary, width: 1.5),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
+            ),
+            icon: const Icon(Icons.bookmark_add_rounded, size: 18),
+            label: const Text('Save Template', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: AppDimensions.spacingMd),
 
           // Batch Export Button
           ElevatedButton.icon(

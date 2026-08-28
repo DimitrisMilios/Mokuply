@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/constants/store_specs.dart';
@@ -8,6 +9,7 @@ import '../models/project_template.dart';
 import '../models/template_data.dart';
 import '../services/export_service.dart';
 import '../services/file_service.dart';
+import '../services/storage_service.dart';
 import '../widgets/canvas/canvas_mockup_widget.dart';
 
 /// Editor ViewModel — manages multi-screenshot project sets, canvas elements, and app flow.
@@ -16,6 +18,10 @@ class EditorViewModel extends ChangeNotifier {
   ProjectTemplate? _activeTemplate;
   List<TemplateData> _screenshots = ProjectTemplate.teamOrganize().initialScreenshots;
   int _selectedIndex = 0;
+
+  // Local persistence draft state
+  List<TemplateData>? _savedDraftScreenshots;
+  bool _isAutoSaving = false;
 
   // Selected element tracking on active canvas screen
   String? _selectedElementId; // e.g. 'title', 'subtitle', 'dev_123', 'img_123', 'txt_123'
@@ -39,6 +45,8 @@ class EditorViewModel extends ChangeNotifier {
   int get exportingProgressIndex => _exportingProgressIndex;
   int get exportingTotalSteps => _exportingTotalSteps;
   String get exportingStatusText => _exportingStatusText;
+  bool get hasSavedDraft => _savedDraftScreenshots != null && _savedDraftScreenshots!.isNotEmpty;
+  bool get isAutoSaving => _isAutoSaving;
 
   // Active Element Selection Accessors
   String? get selectedElementId => _selectedElementId;
@@ -695,6 +703,112 @@ class EditorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- Persistence & Storage Initialization ---
+
+  Future<void> initStorage() async {
+    try {
+      final customTemplates = await StorageService.loadCustomTemplates();
+      if (customTemplates.isNotEmpty) {
+        ProjectTemplate.setCustomTemplates(customTemplates);
+      }
+
+      final draft = await StorageService.loadActiveDraft();
+      if (draft != null && draft.isNotEmpty) {
+        _savedDraftScreenshots = draft;
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('EditorViewModel.initStorage error: $e');
+    }
+  }
+
+  void restoreSavedDraft() {
+    if (_savedDraftScreenshots != null && _savedDraftScreenshots!.isNotEmpty) {
+      _screenshots = List.from(_savedDraftScreenshots!);
+      _selectedIndex = 0;
+      _isHomeScreen = false;
+      _selectedElementId = null;
+      _selectedDeviceId = null;
+      _selectedImageId = null;
+      _selectedTextId = null;
+      notifyListeners();
+    }
+  }
+
+  void discardSavedDraft() {
+    _savedDraftScreenshots = null;
+    StorageService.clearActiveDraft();
+    notifyListeners();
+  }
+
+  void _scheduleAutoSave() {
+    _isAutoSaving = true;
+    StorageService.saveActiveDraft(_screenshots).then((_) {
+      _isAutoSaving = false;
+    });
+  }
+
+  Future<void> saveCurrentAsTemplate({
+    required String title,
+    required String category,
+    required String description,
+  }) async {
+    final template = ProjectTemplate(
+      id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      category: category,
+      description: description,
+      previewGradient: const [Color(0xFFEFF6FF), Color(0xFFDBEAFE), Color(0xFF3B82F6)],
+      platform: platform,
+      initialScreenshots: List.from(_screenshots),
+    );
+
+    ProjectTemplate.addCustomTemplate(template);
+    await StorageService.saveCustomTemplates(ProjectTemplate.customTemplates);
+    notifyListeners();
+  }
+
+  Future<ProjectTemplate?> importTemplateFromJson(String jsonString) async {
+    try {
+      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
+      final template = ProjectTemplate.fromJson(decoded);
+
+      ProjectTemplate.addCustomTemplate(template);
+      await StorageService.saveCustomTemplates(ProjectTemplate.customTemplates);
+      openEditorWithTemplate(template);
+      return template;
+    } catch (e) {
+      debugPrint('EditorViewModel.importTemplateFromJson error: $e');
+      return null;
+    }
+  }
+
+  Future<void> exportTemplateFile({
+    required String title,
+    required String category,
+    required String description,
+  }) async {
+    final template = ProjectTemplate(
+      id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      category: category,
+      description: description,
+      previewGradient: const [Color(0xFFEFF6FF), Color(0xFFDBEAFE), Color(0xFF3B82F6)],
+      platform: platform,
+      initialScreenshots: List.from(_screenshots),
+    );
+
+    final jsonStr = jsonEncode(template.toJson());
+    final bytes = Uint8List.fromList(utf8.encode(jsonStr));
+    final filename = '${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}.mokuply';
+
+    await ExportService.downloadFileWeb(
+      bytes: bytes,
+      filename: filename,
+      mimeType: 'application/json',
+    );
+  }
+
   // --- Multi-Screenshot Actions ---
 
   void selectScreenshot(int index) {
@@ -718,6 +832,7 @@ class EditorViewModel extends ChangeNotifier {
     );
     _screenshots.add(newCard);
     _selectedIndex = _screenshots.length - 1;
+    _scheduleAutoSave();
     notifyListeners();
   }
 
@@ -727,6 +842,7 @@ class EditorViewModel extends ChangeNotifier {
     if (_selectedIndex >= _screenshots.length) {
       _selectedIndex = _screenshots.length - 1;
     }
+    _scheduleAutoSave();
     notifyListeners();
   }
 
@@ -737,6 +853,7 @@ class EditorViewModel extends ChangeNotifier {
       );
       _screenshots.insert(index + 1, copy);
       _selectedIndex = index + 1;
+      _scheduleAutoSave();
       notifyListeners();
     }
   }
@@ -745,6 +862,7 @@ class EditorViewModel extends ChangeNotifier {
 
   void _updateCurrentScreenshot(TemplateData updated) {
     _screenshots[_selectedIndex] = updated;
+    _scheduleAutoSave();
     notifyListeners();
   }
 

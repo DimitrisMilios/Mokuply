@@ -231,4 +231,120 @@ class TemplateData {
       customTextItems: customTextItems ?? this.customTextItems,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'platform': platform.name,
+      'layoutMode': layoutMode.name,
+      'frameStyle': frameStyle.name,
+      'titleText': titleText,
+      'subtitleText': subtitleText,
+      'titleFont': titleFont,
+      'subtitleFont': subtitleFont,
+      'titleSize': titleSize,
+      'subtitleSize': subtitleSize,
+      'titleWeightIndex': FontWeight.values.indexOf(titleWeight),
+      'subtitleWeightIndex': FontWeight.values.indexOf(subtitleWeight),
+      'textColor': textColor.toARGB32(),
+      'subtitleColor': subtitleColor.toARGB32(),
+      'titleAlignment': titleAlignment.name,
+      'subtitleAlignment': subtitleAlignment.name,
+      'selectedGradientIndex': selectedGradientIndex,
+      'customBackgroundColor': customBackgroundColor?.toARGB32(),
+      'customGradientColors': customGradientColors?.map((c) => c.toARGB32()).toList(),
+      'deviceScale': deviceScale,
+      'deviceOffsetX': deviceOffsetX,
+      'deviceOffsetY': deviceOffsetY,
+      'textOffsetX': textOffsetX,
+      'textOffsetY': textOffsetY,
+      'subtitleOffsetX': subtitleOffsetX,
+      'subtitleOffsetY': subtitleOffsetY,
+      'deviceRotation': deviceRotation,
+      'hasShadow': hasShadow,
+      'appStoreTextOffsetX': appStoreTextOffsetX,
+      'appStoreTextOffsetY': appStoreTextOffsetY,
+      'googlePlayTextOffsetX': googlePlayTextOffsetX,
+      'googlePlayTextOffsetY': googlePlayTextOffsetY,
+      'appStoreSubtitleOffsetX': appStoreSubtitleOffsetX,
+      'appStoreSubtitleOffsetY': appStoreSubtitleOffsetY,
+      'googlePlaySubtitleOffsetX': googlePlaySubtitleOffsetX,
+      'googlePlaySubtitleOffsetY': googlePlaySubtitleOffsetY,
+      'devices': devices.map((d) => d.toJson()).toList(),
+      'customTextItems': customTextItems.map((t) => t.toJson()).toList(),
+    };
+  }
+
+  factory TemplateData.fromJson(Map<String, dynamic> json) {
+    final titleWeightIdx = json['titleWeightIndex'] as int? ?? 6;
+    final subWeightIdx = json['subtitleWeightIndex'] as int? ?? 4;
+
+    return TemplateData(
+      platform: TargetPlatformType.values.firstWhere(
+        (e) => e.name == json['platform'],
+        orElse: () => TargetPlatformType.appStore,
+      ),
+      layoutMode: LayoutMode.values.firstWhere(
+        (e) => e.name == json['layoutMode'],
+        orElse: () => LayoutMode.titleTopDeviceBottom,
+      ),
+      frameStyle: DeviceFrameStyle.values.firstWhere(
+        (e) => e.name == json['frameStyle'],
+        orElse: () => DeviceFrameStyle.iphone16ProMax,
+      ),
+      titleText: json['titleText'] as String? ?? '',
+      subtitleText: json['subtitleText'] as String? ?? '',
+      titleFont: json['titleFont'] as String? ?? 'Outfit',
+      subtitleFont: json['subtitleFont'] as String? ?? 'Inter',
+      titleSize: (json['titleSize'] as num?)?.toDouble() ?? 64.0,
+      subtitleSize: (json['subtitleSize'] as num?)?.toDouble() ?? 30.0,
+      titleWeight: (titleWeightIdx >= 0 && titleWeightIdx < FontWeight.values.length)
+          ? FontWeight.values[titleWeightIdx]
+          : FontWeight.w700,
+      subtitleWeight: (subWeightIdx >= 0 && subWeightIdx < FontWeight.values.length)
+          ? FontWeight.values[subWeightIdx]
+          : FontWeight.w500,
+      textColor: Color(json['textColor'] as int? ?? 0xFFFFFFFF),
+      subtitleColor: Color(json['subtitleColor'] as int? ?? 0xFFE2E8F0),
+      titleAlignment: TextAlign.values.firstWhere(
+        (e) => e.name == json['titleAlignment'],
+        orElse: () => TextAlign.center,
+      ),
+      subtitleAlignment: TextAlign.values.firstWhere(
+        (e) => e.name == json['subtitleAlignment'],
+        orElse: () => TextAlign.center,
+      ),
+      selectedGradientIndex: json['selectedGradientIndex'] as int? ?? 0,
+      customBackgroundColor: json['customBackgroundColor'] != null
+          ? Color(json['customBackgroundColor'] as int)
+          : null,
+      customGradientColors: json['customGradientColors'] != null
+          ? (json['customGradientColors'] as List).map((c) => Color(c as int)).toList()
+          : null,
+      deviceScale: (json['deviceScale'] as num?)?.toDouble() ?? 0.85,
+      deviceOffsetX: (json['deviceOffsetX'] as num?)?.toDouble() ?? 0.0,
+      deviceOffsetY: (json['deviceOffsetY'] as num?)?.toDouble() ?? 0.0,
+      textOffsetX: (json['textOffsetX'] as num?)?.toDouble() ?? 0.0,
+      textOffsetY: (json['textOffsetY'] as num?)?.toDouble() ?? 0.0,
+      subtitleOffsetX: (json['subtitleOffsetX'] as num?)?.toDouble() ?? 0.0,
+      subtitleOffsetY: (json['subtitleOffsetY'] as num?)?.toDouble() ?? 0.0,
+      deviceRotation: (json['deviceRotation'] as num?)?.toDouble() ?? 0.0,
+      hasShadow: json['hasShadow'] as bool? ?? true,
+      appStoreTextOffsetX: (json['appStoreTextOffsetX'] as num?)?.toDouble(),
+      appStoreTextOffsetY: (json['appStoreTextOffsetY'] as num?)?.toDouble(),
+      googlePlayTextOffsetX: (json['googlePlayTextOffsetX'] as num?)?.toDouble(),
+      googlePlayTextOffsetY: (json['googlePlayTextOffsetY'] as num?)?.toDouble(),
+      appStoreSubtitleOffsetX: (json['appStoreSubtitleOffsetX'] as num?)?.toDouble(),
+      appStoreSubtitleOffsetY: (json['appStoreSubtitleOffsetY'] as num?)?.toDouble(),
+      googlePlaySubtitleOffsetX: (json['googlePlaySubtitleOffsetX'] as num?)?.toDouble(),
+      googlePlaySubtitleOffsetY: (json['googlePlaySubtitleOffsetY'] as num?)?.toDouble(),
+      devices: (json['devices'] as List?)
+              ?.map((d) => CanvasDeviceItem.fromJson(d as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      customTextItems: (json['customTextItems'] as List?)
+              ?.map((t) => CanvasTextItem.fromJson(t as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
+  }
 }

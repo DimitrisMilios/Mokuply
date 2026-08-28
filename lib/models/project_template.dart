@@ -23,6 +23,39 @@ class ProjectTemplate {
     required this.initialScreenshots,
   });
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'category': category,
+      'description': description,
+      'previewGradient': previewGradient.map((c) => c.toARGB32()).toList(),
+      'platform': platform.name,
+      'initialScreenshots': initialScreenshots.map((s) => s.toJson()).toList(),
+    };
+  }
+
+  factory ProjectTemplate.fromJson(Map<String, dynamic> json) {
+    return ProjectTemplate(
+      id: json['id'] as String? ?? 'custom_${DateTime.now().millisecondsSinceEpoch}',
+      title: json['title'] as String? ?? 'Custom Template',
+      category: json['category'] as String? ?? 'Custom',
+      description: json['description'] as String? ?? '',
+      previewGradient: (json['previewGradient'] as List?)
+              ?.map((c) => Color(c as int))
+              .toList() ??
+          const [Color(0xFFEFF6FF), Color(0xFFDBEAFE), Color(0xFF3B82F6)],
+      platform: TargetPlatformType.values.firstWhere(
+        (e) => e.name == json['platform'],
+        orElse: () => TargetPlatformType.appStore,
+      ),
+      initialScreenshots: (json['initialScreenshots'] as List?)
+              ?.map((s) => TemplateData.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
+  }
+
   /// Default SaaS / Modern App 6-Screenshot Starter Template
   static ProjectTemplate saasModern() {
     return ProjectTemplate(
@@ -373,8 +406,28 @@ class ProjectTemplate {
     );
   }
 
+  /// In-memory user-created custom templates
+  static final List<ProjectTemplate> _userCustomTemplates = [];
+
+  static List<ProjectTemplate> get customTemplates => List.unmodifiable(_userCustomTemplates);
+
+  static void addCustomTemplate(ProjectTemplate template) {
+    _userCustomTemplates.removeWhere((t) => t.id == template.id);
+    _userCustomTemplates.insert(0, template);
+  }
+
+  static void setCustomTemplates(List<ProjectTemplate> templates) {
+    _userCustomTemplates.clear();
+    _userCustomTemplates.addAll(templates);
+  }
+
+  static void clearCustomTemplates() {
+    _userCustomTemplates.clear();
+  }
+
   /// List of all available store templates
   static List<ProjectTemplate> get allTemplates => [
+        ..._userCustomTemplates,
         teamOrganize(),
         saasModern(),
         minimalistClean(),

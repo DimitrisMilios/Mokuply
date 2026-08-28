@@ -19,4 +19,24 @@ class FileService {
     }
     return null;
   }
+
+  /// Opens the platform file picker for template files (.mokuply, .json) and returns raw text content.
+  static Future<String?> pickTemplateFileContent() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['mokuply', 'json'],
+        withData: true,
+      );
+      if (result != null && result.files.isNotEmpty) {
+        final bytes = result.files.single.bytes;
+        if (bytes != null) {
+          return String.fromCharCodes(bytes);
+        }
+      }
+    } catch (e) {
+      debugPrint('FileService.pickTemplateFileContent error: $e');
+    }
+    return null;
+  }
 }
