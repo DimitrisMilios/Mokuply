@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/store_specs.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/canvas/canvas_mockup_widget.dart';
 import '../../../widgets/shared/canvas_grid_painter.dart';
@@ -52,9 +53,10 @@ class MultiCanvasWorkspace extends StatelessWidget {
                     final itemData = vm.screenshots[index];
                     final isSelected = vm.selectedIndex == index;
 
-                    // Standard high-resolution base dimensions for artboard cards
+                    // All cards share one height, so the shared design renders at the
+                    // same scale on both stores; only the card width follows the store.
                     const double previewHeight = 620.0;
-                    final double previewWidth = previewHeight * vm.platform.aspectRatio;
+                    final double previewWidth = previewHeight * itemData.platform.aspectRatio;
 
                     return Listener(
                       onPointerDown: (_) {
@@ -88,6 +90,40 @@ class MultiCanvasWorkspace extends StatelessWidget {
                                 data: itemData,
                                 itemIndex: index,
                                 canvasSize: Size(previewWidth, previewHeight),
+                              ),
+                            ),
+
+                            // Store / dimensions badge (top-right)
+                            Positioned(
+                              top: 14,
+                              right: 14,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.55),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      itemData.platform == TargetPlatformType.appStore ? Icons.apple : Icons.android,
+                                      size: 11,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      itemData.platform.dimensionsLabel,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        fontFeatures: [FontFeature.tabularFigures()],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
 

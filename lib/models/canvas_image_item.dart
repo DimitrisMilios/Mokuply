@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import '../core/constants/store_specs.dart';
 
-/// Data model representing a standalone custom image asset placed on the canvas.
+/// A standalone custom image asset placed on the canvas.
+/// Position, size and tilt are shared by every store.
 @immutable
 class CanvasImageItem {
   final String id;
@@ -13,14 +13,6 @@ class CanvasImageItem {
   final double opacity;
   final bool hasShadow;
 
-  // Platform-independent layout offsets and scales for Apple vs Google Play
-  final double? appStoreOffsetX;
-  final double? appStoreOffsetY;
-  final double? appStoreScale;
-  final double? googlePlayOffsetX;
-  final double? googlePlayOffsetY;
-  final double? googlePlayScale;
-
   const CanvasImageItem({
     required this.id,
     required this.imageBytes,
@@ -30,37 +22,7 @@ class CanvasImageItem {
     this.rotation = 0.0,
     this.opacity = 1.0,
     this.hasShadow = false,
-    this.appStoreOffsetX,
-    this.appStoreOffsetY,
-    this.appStoreScale,
-    this.googlePlayOffsetX,
-    this.googlePlayOffsetY,
-    this.googlePlayScale,
   });
-
-  double offsetXFor(TargetPlatformType platform) {
-    if (platform == TargetPlatformType.appStore) {
-      return appStoreOffsetX ?? offsetX;
-    } else {
-      return googlePlayOffsetX ?? offsetX;
-    }
-  }
-
-  double offsetYFor(TargetPlatformType platform) {
-    if (platform == TargetPlatformType.appStore) {
-      return appStoreOffsetY ?? offsetY;
-    } else {
-      return googlePlayOffsetY ?? offsetY;
-    }
-  }
-
-  double scaleFor(TargetPlatformType platform) {
-    if (platform == TargetPlatformType.appStore) {
-      return appStoreScale ?? scale;
-    } else {
-      return googlePlayScale ?? scale;
-    }
-  }
 
   CanvasImageItem copyWith({
     String? id,
@@ -71,12 +33,6 @@ class CanvasImageItem {
     double? rotation,
     double? opacity,
     bool? hasShadow,
-    double? appStoreOffsetX,
-    double? appStoreOffsetY,
-    double? appStoreScale,
-    double? googlePlayOffsetX,
-    double? googlePlayOffsetY,
-    double? googlePlayScale,
   }) {
     return CanvasImageItem(
       id: id ?? this.id,
@@ -87,12 +43,6 @@ class CanvasImageItem {
       rotation: rotation ?? this.rotation,
       opacity: opacity ?? this.opacity,
       hasShadow: hasShadow ?? this.hasShadow,
-      appStoreOffsetX: appStoreOffsetX ?? this.appStoreOffsetX,
-      appStoreOffsetY: appStoreOffsetY ?? this.appStoreOffsetY,
-      appStoreScale: appStoreScale ?? this.appStoreScale,
-      googlePlayOffsetX: googlePlayOffsetX ?? this.googlePlayOffsetX,
-      googlePlayOffsetY: googlePlayOffsetY ?? this.googlePlayOffsetY,
-      googlePlayScale: googlePlayScale ?? this.googlePlayScale,
     );
   }
 
@@ -108,28 +58,8 @@ class CanvasImageItem {
           offsetY == other.offsetY &&
           rotation == other.rotation &&
           opacity == other.opacity &&
-          hasShadow == other.hasShadow &&
-          appStoreOffsetX == other.appStoreOffsetX &&
-          appStoreOffsetY == other.appStoreOffsetY &&
-          appStoreScale == other.appStoreScale &&
-          googlePlayOffsetX == other.googlePlayOffsetX &&
-          googlePlayOffsetY == other.googlePlayOffsetY &&
-          googlePlayScale == other.googlePlayScale;
+          hasShadow == other.hasShadow;
 
   @override
-  int get hashCode =>
-      id.hashCode ^
-      imageBytes.hashCode ^
-      scale.hashCode ^
-      offsetX.hashCode ^
-      offsetY.hashCode ^
-      rotation.hashCode ^
-      opacity.hashCode ^
-      hasShadow.hashCode ^
-      appStoreOffsetX.hashCode ^
-      appStoreOffsetY.hashCode ^
-      appStoreScale.hashCode ^
-      googlePlayOffsetX.hashCode ^
-      googlePlayOffsetY.hashCode ^
-      googlePlayScale.hashCode;
+  int get hashCode => Object.hash(id, imageBytes, scale, offsetX, offsetY, rotation, opacity, hasShadow);
 }

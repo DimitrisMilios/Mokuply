@@ -78,39 +78,60 @@ class EditorNavbar extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          SegmentedButton<TargetPlatformType>(
-            segments: const [
-              ButtonSegment(
-                value: TargetPlatformType.appStore,
-                label: Text('Apple App Store'),
-                icon: Icon(Icons.apple, size: 18),
-              ),
-              ButtonSegment(
-                value: TargetPlatformType.googlePlay,
-                label: Text('Google Play Store'),
-                icon: Icon(Icons.android, size: 18),
-              ),
-            ],
-            selected: {vm.platform},
-            onSelectionChanged: (selected) {
-              if (selected.isNotEmpty) {
-                vm.setPlatform(selected.first);
-              }
-            },
-            style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return AppColors.primary;
-                }
-                return Colors.white.withValues(alpha: 0.6);
-              }),
-              foregroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return AppColors.textOnPrimary;
-                }
-                return AppColors.textPrimary;
-              }),
-              side: WidgetStateProperty.all(const BorderSide(color: AppColors.glassBorder)),
+          Tooltip(
+            message: 'Switch which store the canvas previews.\n'
+                'Your design is shared, so both stores are always exported.',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.visibility_outlined, size: 16, color: AppColors.textMuted),
+                const SizedBox(width: 6),
+                const Text(
+                  'Preview',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: AppDimensions.fontSm,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.spacingSm),
+                SegmentedButton<TargetPlatformType>(
+                  segments: [
+                    ButtonSegment(
+                      value: TargetPlatformType.appStore,
+                      label: Text('App Store · ${TargetPlatformType.appStore.dimensionsLabel}'),
+                      icon: const Icon(Icons.apple, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: TargetPlatformType.googlePlay,
+                      label: Text('Google Play · ${TargetPlatformType.googlePlay.dimensionsLabel}'),
+                      icon: const Icon(Icons.android, size: 18),
+                    ),
+                  ],
+                  selected: {vm.platform},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (selected) {
+                    if (selected.isNotEmpty) {
+                      vm.setPlatform(selected.first);
+                    }
+                  },
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return AppColors.primary;
+                      }
+                      return Colors.white.withValues(alpha: 0.6);
+                    }),
+                    foregroundColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return AppColors.textOnPrimary;
+                      }
+                      return AppColors.textPrimary;
+                    }),
+                    side: WidgetStateProperty.all(const BorderSide(color: AppColors.glassBorder)),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: AppDimensions.spacingLg),

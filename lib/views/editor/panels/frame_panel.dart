@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/store_specs.dart';
+import '../../../models/canvas_device_item.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/sidebar_card.dart';
 import '../../../widgets/shared/labeled_slider.dart';
@@ -23,7 +24,8 @@ class FramePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Add multiple phone frames or edit existing devices on this screen:',
+            'Add phone frames or edit the selected one. Realistic frames draw an iPhone on the App Store and a '
+            'Galaxy on Google Play with the exact same footprint, so your layout never shifts.',
             style: TextStyle(
               color: AppColors.textMuted,
               fontSize: 12,
@@ -86,9 +88,9 @@ class FramePanel extends StatelessWidget {
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                     dense: true,
-                    leading: _buildModelIcon(dev.frameStyle, isSelected),
+                    leading: _buildModelIcon(dev.frameStyle, vm.platform, isSelected),
                     title: Text(
-                      'Frame #${index + 1}: ${dev.frameStyle.name}',
+                      'Frame #${index + 1}: ${dev.frameStyle.labelFor(vm.platform)}',
                       style: TextStyle(
                         color: isSelected ? AppColors.primary : AppColors.textPrimary,
                         fontSize: 12,
@@ -96,7 +98,7 @@ class FramePanel extends StatelessWidget {
                       ),
                     ),
                     subtitle: Text(
-                      dev.screenshotBytes != null ? 'Screenshot loaded' : 'No screenshot',
+                      _screenshotStatus(dev),
                       style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
                     ),
                     onTap: () => vm.selectDevice(dev.id),
@@ -104,13 +106,13 @@ class FramePanel extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          onPressed: () => vm.pickDeviceFrameScreenshot(dev.id),
+                          onPressed: () => vm.pickDeviceScreenshot(dev.id, vm.platform),
                           icon: Icon(
-                            dev.screenshotBytes != null ? Icons.sync_rounded : Icons.upload_rounded,
+                            dev.hasOwnScreenshotFor(vm.platform) ? Icons.sync_rounded : Icons.upload_rounded,
                             size: 16,
                             color: AppColors.primary,
                           ),
-                          tooltip: 'Upload Screenshot to Frame',
+                          tooltip: 'Upload ${vm.platform.screenshotLabel} screenshot to this frame',
                         ),
                         if (deviceList.length > 1)
                           IconButton(
@@ -129,7 +131,7 @@ class FramePanel extends StatelessWidget {
           if (activeDevice != null) ...[
             const SizedBox(height: AppDimensions.spacingMd),
             const Text(
-              'Selected Device Model Frame:',
+              'Selected Frame Style:',
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: AppDimensions.fontBody,
@@ -138,9 +140,9 @@ class FramePanel extends StatelessWidget {
             ),
             const SizedBox(height: AppDimensions.spacingSm),
 
-            // Visual Model Selector Tiles for active device frame
+            // Frame style tiles for the active device frame
             Column(
-              children: DeviceFrameStyle.availableForPlatform(vm.platform).map((style) {
+              children: DeviceFrameStyle.values.map((style) {
                 final isSelected = activeDevice.frameStyle == style;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
@@ -162,7 +164,7 @@ class FramePanel extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          _buildModelIcon(style, isSelected),
+                          _buildModelIcon(style, vm.platform, isSelected),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -171,14 +173,14 @@ class FramePanel extends StatelessWidget {
                                 Row(
                                   children: [
                                     Text(
-                                      style.name,
+                                      style.label,
                                       style: TextStyle(
                                         color: isSelected ? AppColors.primary : AppColors.textPrimary,
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    if (style == DeviceFrameStyle.iphone16ProMax || style == DeviceFrameStyle.samsungS26Ultra)
+                                    if (style == DeviceFrameStyle.realistic)
                                       Container(
                                         margin: const EdgeInsets.only(left: 6),
                                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
@@ -187,7 +189,7 @@ class FramePanel extends StatelessWidget {
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: const Text(
-                                          'REALISTIC',
+                                          'AUTO PER STORE',
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 9,
@@ -289,56 +291,17 @@ class FramePanel extends StatelessWidget {
     );
   }
 
-  Widget _buildModelIcon(DeviceFrameStyle style, bool isSelected) {
-    Color iconBg = isSelected ? AppColors.primary : const Color(0xFF1F2024);
-    switch (style) {
-      case DeviceFrameStyle.iphone16ProMax:
-        return Container(
-          width: 28,
-          height: 34,
-          decoration: BoxDecoration(
-            color: iconBg,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: const Color(0xFF4A4E54), width: 1.5),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 2.5),
-              Container(
-                width: 10,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ],
-          ),
-        );
+  String _screenshotStatus(CanvasDeviceItem dev) {
+    if (!dev.hasAnyScreenshot) return 'No screenshot yet';
+    final ios = dev.hasOwnScreenshotFor(TargetPlatformType.appStore) ? '✓' : '–';
+    final android = dev.hasOwnScreenshotFor(TargetPlatformType.googlePlay) ? '✓' : '–';
+    return 'iPhone $ios · Android $android';
+  }
 
-      case DeviceFrameStyle.samsungS26Ultra:
-        return Container(
-          width: 28,
-          height: 34,
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : const Color(0xFFD6CFC3),
-            borderRadius: BorderRadius.circular(2),
-            border: Border.all(color: const Color(0xFF9E9484), width: 1.5),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 2.5),
-              Container(
-                width: 3,
-                height: 3,
-                decoration: const BoxDecoration(
-                  color: Colors.black,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
-          ),
-        );
+  Widget _buildModelIcon(DeviceFrameStyle style, TargetPlatformType platform, bool isSelected) {
+    switch (style) {
+      case DeviceFrameStyle.realistic:
+        return platform == TargetPlatformType.appStore ? _buildIphoneIcon(isSelected) : _buildGalaxyIcon(isSelected);
 
       case DeviceFrameStyle.minimalOutline:
         return Container(
@@ -368,5 +331,55 @@ class FramePanel extends StatelessWidget {
           ),
         );
     }
+  }
+
+  Widget _buildIphoneIcon(bool isSelected) {
+    return Container(
+      width: 28,
+      height: 34,
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.primary : const Color(0xFF1F2024),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFF4A4E54), width: 1.5),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 2.5),
+          Container(
+            width: 10,
+            height: 3,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGalaxyIcon(bool isSelected) {
+    return Container(
+      width: 28,
+      height: 34,
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.primary : const Color(0xFFD6CFC3),
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: const Color(0xFF9E9484), width: 1.5),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 2.5),
+          Container(
+            width: 3,
+            height: 3,
+            decoration: const BoxDecoration(
+              color: Colors.black,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

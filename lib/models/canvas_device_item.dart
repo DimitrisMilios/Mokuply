@@ -1,98 +1,77 @@
 import 'package:flutter/foundation.dart';
 import '../core/constants/store_specs.dart';
 
-/// Data model representing a phone frame element placed on the canvas.
+/// A phone frame placed on the canvas.
+///
+/// Position, size and tilt are shared by every store. Only the screenshot
+/// inside the frame differs: [iosScreenshotBytes] is shown on the App Store
+/// and [androidScreenshotBytes] on Google Play, each falling back to the other
+/// when it has not been uploaded yet.
 @immutable
 class CanvasDeviceItem {
   final String id;
   final DeviceFrameStyle frameStyle;
-  final Uint8List? screenshotBytes;
+  final Uint8List? iosScreenshotBytes;
+  final Uint8List? androidScreenshotBytes;
   final double scale;
   final double offsetX;
   final double offsetY;
   final double rotation;
   final bool hasShadow;
 
-  // Platform-independent layout offsets and scales for Apple vs Google Play
-  final double? appStoreOffsetX;
-  final double? appStoreOffsetY;
-  final double? appStoreScale;
-  final double? googlePlayOffsetX;
-  final double? googlePlayOffsetY;
-  final double? googlePlayScale;
-
   const CanvasDeviceItem({
     required this.id,
-    this.frameStyle = DeviceFrameStyle.iphone16ProMax,
-    this.screenshotBytes,
+    this.frameStyle = DeviceFrameStyle.realistic,
+    this.iosScreenshotBytes,
+    this.androidScreenshotBytes,
     this.scale = 0.85,
     this.offsetX = 0.0,
     this.offsetY = 0.0,
     this.rotation = 0.0,
     this.hasShadow = true,
-    this.appStoreOffsetX,
-    this.appStoreOffsetY,
-    this.appStoreScale,
-    this.googlePlayOffsetX,
-    this.googlePlayOffsetY,
-    this.googlePlayScale,
   });
 
-  double offsetXFor(TargetPlatformType platform) {
-    if (platform == TargetPlatformType.appStore) {
-      return appStoreOffsetX ?? offsetX;
-    } else {
-      return googlePlayOffsetX ?? offsetX;
-    }
+  /// Screenshot rendered for [platform], falling back to the other store's image.
+  Uint8List? screenshotFor(TargetPlatformType platform) {
+    return platform == TargetPlatformType.appStore
+        ? (iosScreenshotBytes ?? androidScreenshotBytes)
+        : (androidScreenshotBytes ?? iosScreenshotBytes);
   }
 
-  double offsetYFor(TargetPlatformType platform) {
-    if (platform == TargetPlatformType.appStore) {
-      return appStoreOffsetY ?? offsetY;
-    } else {
-      return googlePlayOffsetY ?? offsetY;
-    }
+  /// True when a screenshot was uploaded specifically for [platform].
+  bool hasOwnScreenshotFor(TargetPlatformType platform) {
+    return platform == TargetPlatformType.appStore ? iosScreenshotBytes != null : androidScreenshotBytes != null;
   }
 
-  double scaleFor(TargetPlatformType platform) {
-    if (platform == TargetPlatformType.appStore) {
-      return appStoreScale ?? scale;
-    } else {
-      return googlePlayScale ?? scale;
-    }
+  bool get hasAnyScreenshot => iosScreenshotBytes != null || androidScreenshotBytes != null;
+
+  CanvasDeviceItem withScreenshotFor(TargetPlatformType platform, Uint8List? bytes) {
+    return platform == TargetPlatformType.appStore
+        ? copyWith(iosScreenshotBytes: () => bytes)
+        : copyWith(androidScreenshotBytes: () => bytes);
   }
 
   CanvasDeviceItem copyWith({
     String? id,
     DeviceFrameStyle? frameStyle,
-    Uint8List? Function()? screenshotBytes,
+    Uint8List? Function()? iosScreenshotBytes,
+    Uint8List? Function()? androidScreenshotBytes,
     double? scale,
     double? offsetX,
     double? offsetY,
     double? rotation,
     bool? hasShadow,
-    double? appStoreOffsetX,
-    double? appStoreOffsetY,
-    double? appStoreScale,
-    double? googlePlayOffsetX,
-    double? googlePlayOffsetY,
-    double? googlePlayScale,
   }) {
     return CanvasDeviceItem(
       id: id ?? this.id,
       frameStyle: frameStyle ?? this.frameStyle,
-      screenshotBytes: screenshotBytes != null ? screenshotBytes() : this.screenshotBytes,
+      iosScreenshotBytes: iosScreenshotBytes != null ? iosScreenshotBytes() : this.iosScreenshotBytes,
+      androidScreenshotBytes: androidScreenshotBytes != null ? androidScreenshotBytes() : this.androidScreenshotBytes,
       scale: scale ?? this.scale,
       offsetX: offsetX ?? this.offsetX,
       offsetY: offsetY ?? this.offsetY,
       rotation: rotation ?? this.rotation,
       hasShadow: hasShadow ?? this.hasShadow,
-      appStoreOffsetX: appStoreOffsetX ?? this.appStoreOffsetX,
-      appStoreOffsetY: appStoreOffsetY ?? this.appStoreOffsetY,
-      appStoreScale: appStoreScale ?? this.appStoreScale,
-      googlePlayOffsetX: googlePlayOffsetX ?? this.googlePlayOffsetX,
-      googlePlayOffsetY: googlePlayOffsetY ?? this.googlePlayOffsetY,
-      googlePlayScale: googlePlayScale ?? this.googlePlayScale,
     );
   }
 
@@ -105,33 +84,20 @@ class CanvasDeviceItem {
       'offsetY': offsetY,
       'rotation': rotation,
       'hasShadow': hasShadow,
-      'appStoreOffsetX': appStoreOffsetX,
-      'appStoreOffsetY': appStoreOffsetY,
-      'appStoreScale': appStoreScale,
-      'googlePlayOffsetX': googlePlayOffsetX,
-      'googlePlayOffsetY': googlePlayOffsetY,
-      'googlePlayScale': googlePlayScale,
     };
   }
 
+  /// Reads both the current format and the legacy per-store format
+  /// (`appStoreOffsetX`, `iphone16ProMax`, ...) produced by older drafts.
   factory CanvasDeviceItem.fromJson(Map<String, dynamic> json) {
     return CanvasDeviceItem(
       id: json['id'] as String? ?? 'dev_${DateTime.now().millisecondsSinceEpoch}',
-      frameStyle: DeviceFrameStyle.values.firstWhere(
-        (e) => e.name == json['frameStyle'],
-        orElse: () => DeviceFrameStyle.iphone16ProMax,
-      ),
+      frameStyle: DeviceFrameStyle.fromName(json['frameStyle'] as String?),
       scale: (json['scale'] as num?)?.toDouble() ?? 0.85,
       offsetX: (json['offsetX'] as num?)?.toDouble() ?? 0.0,
       offsetY: (json['offsetY'] as num?)?.toDouble() ?? 0.0,
       rotation: (json['rotation'] as num?)?.toDouble() ?? 0.0,
       hasShadow: json['hasShadow'] as bool? ?? true,
-      appStoreOffsetX: (json['appStoreOffsetX'] as num?)?.toDouble(),
-      appStoreOffsetY: (json['appStoreOffsetY'] as num?)?.toDouble(),
-      appStoreScale: (json['appStoreScale'] as num?)?.toDouble(),
-      googlePlayOffsetX: (json['googlePlayOffsetX'] as num?)?.toDouble(),
-      googlePlayOffsetY: (json['googlePlayOffsetY'] as num?)?.toDouble(),
-      googlePlayScale: (json['googlePlayScale'] as num?)?.toDouble(),
     );
   }
 
@@ -142,33 +108,24 @@ class CanvasDeviceItem {
           runtimeType == other.runtimeType &&
           id == other.id &&
           frameStyle == other.frameStyle &&
-          screenshotBytes == other.screenshotBytes &&
+          iosScreenshotBytes == other.iosScreenshotBytes &&
+          androidScreenshotBytes == other.androidScreenshotBytes &&
           scale == other.scale &&
           offsetX == other.offsetX &&
           offsetY == other.offsetY &&
           rotation == other.rotation &&
-          hasShadow == other.hasShadow &&
-          appStoreOffsetX == other.appStoreOffsetX &&
-          appStoreOffsetY == other.appStoreOffsetY &&
-          appStoreScale == other.appStoreScale &&
-          googlePlayOffsetX == other.googlePlayOffsetX &&
-          googlePlayOffsetY == other.googlePlayOffsetY &&
-          googlePlayScale == other.googlePlayScale;
+          hasShadow == other.hasShadow;
 
   @override
-  int get hashCode =>
-      id.hashCode ^
-      frameStyle.hashCode ^
-      screenshotBytes.hashCode ^
-      scale.hashCode ^
-      offsetX.hashCode ^
-      offsetY.hashCode ^
-      rotation.hashCode ^
-      hasShadow.hashCode ^
-      appStoreOffsetX.hashCode ^
-      appStoreOffsetY.hashCode ^
-      appStoreScale.hashCode ^
-      googlePlayOffsetX.hashCode ^
-      googlePlayOffsetY.hashCode ^
-      googlePlayScale.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        frameStyle,
+        iosScreenshotBytes,
+        androidScreenshotBytes,
+        scale,
+        offsetX,
+        offsetY,
+        rotation,
+        hasShadow,
+      );
 }

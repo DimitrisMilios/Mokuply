@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:ui' as ui;
-// Conditional import for Flutter Web browser download
-// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
-import 'dart:html' as html;
 
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'desktop_saver.dart';
+// Browser download is only compiled in on the web; the stub keeps VM builds
+// (desktop and `flutter test`) free of dart:html.
+import 'web_downloader_stub.dart' if (dart.library.html) 'web_downloader_web.dart';
 
 class ExportService {
   /// Renders a widget at exact [targetSize] using the live Flutter binding
@@ -115,20 +115,7 @@ class ExportService {
     required String mimeType,
   }) async {
     if (kIsWeb) {
-      final blob = html.Blob([bytes], mimeType);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute("download", filename)
-        ..style.display = 'none';
-
-      html.document.body?.children.add(anchor);
-      anchor.click();
-      anchor.remove();
-
-      // Delay revoking Object URL so browser has time to finish saving
-      Future.delayed(const Duration(seconds: 4), () {
-        html.Url.revokeObjectUrl(url);
-      });
+      await triggerBrowserDownload(bytes, filename, mimeType);
     } else {
       final String? savedPath =
           await DesktopSaver.saveToDownloads(bytes, filename);

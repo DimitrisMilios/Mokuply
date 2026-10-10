@@ -5,7 +5,11 @@ import 'canvas_device_item.dart';
 import 'canvas_image_item.dart';
 import 'canvas_text_item.dart';
 
-/// Pure immutable data model for a mockup template screen.
+/// Pure immutable data model for one mockup screen.
+///
+/// Everything is authored once in [DesignSpace] coordinates and rendered
+/// identically for every store. [platform] only records which store is being
+/// previewed; exports override it per target.
 @immutable
 class TemplateData {
   final TargetPlatformType platform;
@@ -27,20 +31,20 @@ class TemplateData {
   final Color? customBackgroundColor;
   final List<Color>? customGradientColors;
   final Uint8List? customBackgroundImageBytes;
-  final Uint8List? screenshotBytes;
-  final Uint8List? iphoneScreenshotBytes;
-  final Uint8List? samsungScreenshotBytes;
+
+  /// Defaults for the primary phone frame when [devices] is empty.
   final double deviceScale;
   final double deviceOffsetX;
   final double deviceOffsetY;
+  final double deviceRotation;
+  final bool hasShadow;
+
   final double textOffsetX; // Title X offset
   final double textOffsetY; // Title Y offset
   final double subtitleOffsetX;
   final double subtitleOffsetY;
-  final double deviceRotation;
-  final bool hasShadow;
 
-  /// Multi-Element Collections per Canvas Screen
+  /// Multi-element collections per canvas screen.
   final List<CanvasDeviceItem> devices;
   final List<CanvasImageItem> customImageItems;
   final List<CanvasTextItem> customTextItems;
@@ -48,7 +52,7 @@ class TemplateData {
   const TemplateData({
     this.platform = TargetPlatformType.appStore,
     this.layoutMode = LayoutMode.titleTopDeviceBottom,
-    this.frameStyle = DeviceFrameStyle.iphone16ProMax,
+    this.frameStyle = DeviceFrameStyle.realistic,
     this.titleText = 'Build Stunning Apps',
     this.subtitleText = 'Design high-res store screenshots in seconds',
     this.titleFont = 'Outfit',
@@ -65,74 +69,28 @@ class TemplateData {
     this.customBackgroundColor,
     this.customGradientColors,
     this.customBackgroundImageBytes,
-    this.screenshotBytes,
-    this.iphoneScreenshotBytes,
-    this.samsungScreenshotBytes,
     this.deviceScale = 0.85,
     this.deviceOffsetX = 0.0,
     this.deviceOffsetY = 0.0,
+    this.deviceRotation = 0.0,
+    this.hasShadow = true,
     this.textOffsetX = 0.0,
     this.textOffsetY = 0.0,
     this.subtitleOffsetX = 0.0,
     this.subtitleOffsetY = 0.0,
-    this.deviceRotation = 0.0,
-    this.hasShadow = true,
-    this.appStoreTextOffsetX,
-    this.appStoreTextOffsetY,
-    this.googlePlayTextOffsetX,
-    this.googlePlayTextOffsetY,
-    this.appStoreSubtitleOffsetX,
-    this.appStoreSubtitleOffsetY,
-    this.googlePlaySubtitleOffsetX,
-    this.googlePlaySubtitleOffsetY,
     this.devices = const [],
     this.customImageItems = const [],
     this.customTextItems = const [],
   });
 
-  final double? appStoreTextOffsetX;
-  final double? appStoreTextOffsetY;
-  final double? googlePlayTextOffsetX;
-  final double? googlePlayTextOffsetY;
-
-  final double? appStoreSubtitleOffsetX;
-  final double? appStoreSubtitleOffsetY;
-  final double? googlePlaySubtitleOffsetX;
-  final double? googlePlaySubtitleOffsetY;
-
-  double textOffsetXFor(TargetPlatformType p) =>
-      p == TargetPlatformType.appStore ? (appStoreTextOffsetX ?? textOffsetX) : (googlePlayTextOffsetX ?? textOffsetX);
-
-  double textOffsetYFor(TargetPlatformType p) =>
-      p == TargetPlatformType.appStore ? (appStoreTextOffsetY ?? textOffsetY) : (googlePlayTextOffsetY ?? textOffsetY);
-
-  double subtitleOffsetXFor(TargetPlatformType p) =>
-      p == TargetPlatformType.appStore ? (appStoreSubtitleOffsetX ?? subtitleOffsetX) : (googlePlaySubtitleOffsetX ?? subtitleOffsetX);
-
-  double subtitleOffsetYFor(TargetPlatformType p) =>
-      p == TargetPlatformType.appStore ? (appStoreSubtitleOffsetY ?? subtitleOffsetY) : (googlePlaySubtitleOffsetY ?? subtitleOffsetY);
-
-  /// Computes effective screenshot bytes for active primary device model style
-  Uint8List? get effectiveScreenshotBytes {
-    if (frameStyle == DeviceFrameStyle.iphone16ProMax && iphoneScreenshotBytes != null) {
-      return iphoneScreenshotBytes;
-    }
-    if (frameStyle == DeviceFrameStyle.samsungS26Ultra && samsungScreenshotBytes != null) {
-      return samsungScreenshotBytes;
-    }
-    return screenshotBytes;
-  }
-
-  /// Returns effective list of phone frames on this canvas screen.
-  /// If [devices] is non-empty, returns [devices].
-  /// Otherwise, falls back to a primary device frame constructed from top-level properties.
+  /// Phone frames on this screen. When [devices] is empty a primary frame is
+  /// synthesised from the top-level device defaults (used by built-in templates).
   List<CanvasDeviceItem> get effectiveDevices {
     if (devices.isNotEmpty) return devices;
     return [
       CanvasDeviceItem(
         id: 'dev_primary',
         frameStyle: frameStyle,
-        screenshotBytes: effectiveScreenshotBytes,
         scale: deviceScale,
         offsetX: deviceOffsetX,
         offsetY: deviceOffsetY,
@@ -162,26 +120,15 @@ class TemplateData {
     Color? Function()? customBackgroundColor,
     List<Color>? Function()? customGradientColors,
     Uint8List? Function()? customBackgroundImageBytes,
-    Uint8List? Function()? screenshotBytes,
-    Uint8List? Function()? iphoneScreenshotBytes,
-    Uint8List? Function()? samsungScreenshotBytes,
     double? deviceScale,
     double? deviceOffsetX,
     double? deviceOffsetY,
+    double? deviceRotation,
+    bool? hasShadow,
     double? textOffsetX,
     double? textOffsetY,
     double? subtitleOffsetX,
     double? subtitleOffsetY,
-    double? deviceRotation,
-    bool? hasShadow,
-    double? appStoreTextOffsetX,
-    double? appStoreTextOffsetY,
-    double? googlePlayTextOffsetX,
-    double? googlePlayTextOffsetY,
-    double? appStoreSubtitleOffsetX,
-    double? appStoreSubtitleOffsetY,
-    double? googlePlaySubtitleOffsetX,
-    double? googlePlaySubtitleOffsetY,
     List<CanvasDeviceItem>? devices,
     List<CanvasImageItem>? customImageItems,
     List<CanvasTextItem>? customTextItems,
@@ -205,27 +152,17 @@ class TemplateData {
       selectedGradientIndex: selectedGradientIndex ?? this.selectedGradientIndex,
       customBackgroundColor: customBackgroundColor != null ? customBackgroundColor() : this.customBackgroundColor,
       customGradientColors: customGradientColors != null ? customGradientColors() : this.customGradientColors,
-      customBackgroundImageBytes: customBackgroundImageBytes != null ? customBackgroundImageBytes() : this.customBackgroundImageBytes,
-      screenshotBytes: screenshotBytes != null ? screenshotBytes() : this.screenshotBytes,
-      iphoneScreenshotBytes: iphoneScreenshotBytes != null ? iphoneScreenshotBytes() : this.iphoneScreenshotBytes,
-      samsungScreenshotBytes: samsungScreenshotBytes != null ? samsungScreenshotBytes() : this.samsungScreenshotBytes,
+      customBackgroundImageBytes:
+          customBackgroundImageBytes != null ? customBackgroundImageBytes() : this.customBackgroundImageBytes,
       deviceScale: deviceScale ?? this.deviceScale,
       deviceOffsetX: deviceOffsetX ?? this.deviceOffsetX,
       deviceOffsetY: deviceOffsetY ?? this.deviceOffsetY,
+      deviceRotation: deviceRotation ?? this.deviceRotation,
+      hasShadow: hasShadow ?? this.hasShadow,
       textOffsetX: textOffsetX ?? this.textOffsetX,
       textOffsetY: textOffsetY ?? this.textOffsetY,
       subtitleOffsetX: subtitleOffsetX ?? this.subtitleOffsetX,
       subtitleOffsetY: subtitleOffsetY ?? this.subtitleOffsetY,
-      deviceRotation: deviceRotation ?? this.deviceRotation,
-      hasShadow: hasShadow ?? this.hasShadow,
-      appStoreTextOffsetX: appStoreTextOffsetX ?? this.appStoreTextOffsetX,
-      appStoreTextOffsetY: appStoreTextOffsetY ?? this.appStoreTextOffsetY,
-      googlePlayTextOffsetX: googlePlayTextOffsetX ?? this.googlePlayTextOffsetX,
-      googlePlayTextOffsetY: googlePlayTextOffsetY ?? this.googlePlayTextOffsetY,
-      appStoreSubtitleOffsetX: appStoreSubtitleOffsetX ?? this.appStoreSubtitleOffsetX,
-      appStoreSubtitleOffsetY: appStoreSubtitleOffsetY ?? this.appStoreSubtitleOffsetY,
-      googlePlaySubtitleOffsetX: googlePlaySubtitleOffsetX ?? this.googlePlaySubtitleOffsetX,
-      googlePlaySubtitleOffsetY: googlePlaySubtitleOffsetY ?? this.googlePlaySubtitleOffsetY,
       devices: devices ?? this.devices,
       customImageItems: customImageItems ?? this.customImageItems,
       customTextItems: customTextItems ?? this.customTextItems,
@@ -255,25 +192,19 @@ class TemplateData {
       'deviceScale': deviceScale,
       'deviceOffsetX': deviceOffsetX,
       'deviceOffsetY': deviceOffsetY,
+      'deviceRotation': deviceRotation,
+      'hasShadow': hasShadow,
       'textOffsetX': textOffsetX,
       'textOffsetY': textOffsetY,
       'subtitleOffsetX': subtitleOffsetX,
       'subtitleOffsetY': subtitleOffsetY,
-      'deviceRotation': deviceRotation,
-      'hasShadow': hasShadow,
-      'appStoreTextOffsetX': appStoreTextOffsetX,
-      'appStoreTextOffsetY': appStoreTextOffsetY,
-      'googlePlayTextOffsetX': googlePlayTextOffsetX,
-      'googlePlayTextOffsetY': googlePlayTextOffsetY,
-      'appStoreSubtitleOffsetX': appStoreSubtitleOffsetX,
-      'appStoreSubtitleOffsetY': appStoreSubtitleOffsetY,
-      'googlePlaySubtitleOffsetX': googlePlaySubtitleOffsetX,
-      'googlePlaySubtitleOffsetY': googlePlaySubtitleOffsetY,
       'devices': devices.map((d) => d.toJson()).toList(),
       'customTextItems': customTextItems.map((t) => t.toJson()).toList(),
     };
   }
 
+  /// Legacy per-store keys (`appStoreTextOffsetX`, ...) from older drafts are
+  /// ignored; the shared offsets were always written alongside them.
   factory TemplateData.fromJson(Map<String, dynamic> json) {
     final titleWeightIdx = json['titleWeightIndex'] as int? ?? 6;
     final subWeightIdx = json['subtitleWeightIndex'] as int? ?? 4;
@@ -287,10 +218,7 @@ class TemplateData {
         (e) => e.name == json['layoutMode'],
         orElse: () => LayoutMode.titleTopDeviceBottom,
       ),
-      frameStyle: DeviceFrameStyle.values.firstWhere(
-        (e) => e.name == json['frameStyle'],
-        orElse: () => DeviceFrameStyle.iphone16ProMax,
-      ),
+      frameStyle: DeviceFrameStyle.fromName(json['frameStyle'] as String?),
       titleText: json['titleText'] as String? ?? '',
       subtitleText: json['subtitleText'] as String? ?? '',
       titleFont: json['titleFont'] as String? ?? 'Outfit',
@@ -314,29 +242,20 @@ class TemplateData {
         orElse: () => TextAlign.center,
       ),
       selectedGradientIndex: json['selectedGradientIndex'] as int? ?? 0,
-      customBackgroundColor: json['customBackgroundColor'] != null
-          ? Color(json['customBackgroundColor'] as int)
-          : null,
+      customBackgroundColor:
+          json['customBackgroundColor'] != null ? Color(json['customBackgroundColor'] as int) : null,
       customGradientColors: json['customGradientColors'] != null
           ? (json['customGradientColors'] as List).map((c) => Color(c as int)).toList()
           : null,
       deviceScale: (json['deviceScale'] as num?)?.toDouble() ?? 0.85,
       deviceOffsetX: (json['deviceOffsetX'] as num?)?.toDouble() ?? 0.0,
       deviceOffsetY: (json['deviceOffsetY'] as num?)?.toDouble() ?? 0.0,
+      deviceRotation: (json['deviceRotation'] as num?)?.toDouble() ?? 0.0,
+      hasShadow: json['hasShadow'] as bool? ?? true,
       textOffsetX: (json['textOffsetX'] as num?)?.toDouble() ?? 0.0,
       textOffsetY: (json['textOffsetY'] as num?)?.toDouble() ?? 0.0,
       subtitleOffsetX: (json['subtitleOffsetX'] as num?)?.toDouble() ?? 0.0,
       subtitleOffsetY: (json['subtitleOffsetY'] as num?)?.toDouble() ?? 0.0,
-      deviceRotation: (json['deviceRotation'] as num?)?.toDouble() ?? 0.0,
-      hasShadow: json['hasShadow'] as bool? ?? true,
-      appStoreTextOffsetX: (json['appStoreTextOffsetX'] as num?)?.toDouble(),
-      appStoreTextOffsetY: (json['appStoreTextOffsetY'] as num?)?.toDouble(),
-      googlePlayTextOffsetX: (json['googlePlayTextOffsetX'] as num?)?.toDouble(),
-      googlePlayTextOffsetY: (json['googlePlayTextOffsetY'] as num?)?.toDouble(),
-      appStoreSubtitleOffsetX: (json['appStoreSubtitleOffsetX'] as num?)?.toDouble(),
-      appStoreSubtitleOffsetY: (json['appStoreSubtitleOffsetY'] as num?)?.toDouble(),
-      googlePlaySubtitleOffsetX: (json['googlePlaySubtitleOffsetX'] as num?)?.toDouble(),
-      googlePlaySubtitleOffsetY: (json['googlePlaySubtitleOffsetY'] as num?)?.toDouble(),
       devices: (json['devices'] as List?)
               ?.map((d) => CanvasDeviceItem.fromJson(d as Map<String, dynamic>))
               .toList() ??

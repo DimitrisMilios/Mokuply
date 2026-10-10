@@ -180,7 +180,7 @@ class ProjectTemplate {
       initialScreenshots: [
         const TemplateData(
           platform: TargetPlatformType.googlePlay,
-          frameStyle: DeviceFrameStyle.samsungS26Ultra,
+          frameStyle: DeviceFrameStyle.realistic,
           titleText: 'Discover New Music',
           subtitleText: 'Stream millions of tracks in lossless audio',
           selectedGradientIndex: 2,
@@ -188,7 +188,7 @@ class ProjectTemplate {
         ),
         const TemplateData(
           platform: TargetPlatformType.googlePlay,
-          frameStyle: DeviceFrameStyle.samsungS26Ultra,
+          frameStyle: DeviceFrameStyle.realistic,
           titleText: 'Personalized Mixes',
           subtitleText: 'Playlists crafted daily just for your taste',
           selectedGradientIndex: 2,
@@ -196,7 +196,7 @@ class ProjectTemplate {
         ),
         const TemplateData(
           platform: TargetPlatformType.googlePlay,
-          frameStyle: DeviceFrameStyle.samsungS26Ultra,
+          frameStyle: DeviceFrameStyle.realistic,
           titleText: 'Live Concert Feeds',
           subtitleText: 'Follow your favorite artists worldwide',
           selectedGradientIndex: 2,
@@ -204,7 +204,7 @@ class ProjectTemplate {
         ),
         const TemplateData(
           platform: TargetPlatformType.googlePlay,
-          frameStyle: DeviceFrameStyle.samsungS26Ultra,
+          frameStyle: DeviceFrameStyle.realistic,
           titleText: 'Offline Playback',
           subtitleText: 'Save albums and listen anywhere without data',
           selectedGradientIndex: 2,
@@ -212,7 +212,7 @@ class ProjectTemplate {
         ),
         const TemplateData(
           platform: TargetPlatformType.googlePlay,
-          frameStyle: DeviceFrameStyle.samsungS26Ultra,
+          frameStyle: DeviceFrameStyle.realistic,
           titleText: 'High Quality EQ',
           subtitleText: 'Fine-tune sound with custom equalizer settings',
           selectedGradientIndex: 2,
@@ -220,7 +220,7 @@ class ProjectTemplate {
         ),
         const TemplateData(
           platform: TargetPlatformType.googlePlay,
-          frameStyle: DeviceFrameStyle.samsungS26Ultra,
+          frameStyle: DeviceFrameStyle.realistic,
           titleText: 'Listen Now',
           subtitleText: 'Available on iOS and Android',
           selectedGradientIndex: 2,
@@ -265,7 +265,7 @@ class ProjectTemplate {
             // Background Phone 2 (left edge entering from the right)
             CanvasDeviceItem(
               id: 'dev_screen1_peer',
-              frameStyle: DeviceFrameStyle.iphone16ProMax,
+              frameStyle: DeviceFrameStyle.realistic,
               scale: 1.28,
               offsetX: 940.0,
               offsetY: -60.0,
@@ -275,7 +275,7 @@ class ProjectTemplate {
             // Foreground Main Phone 1 (Tilted left, full phone)
             CanvasDeviceItem(
               id: 'dev_screen1_main',
-              frameStyle: DeviceFrameStyle.iphone16ProMax,
+              frameStyle: DeviceFrameStyle.realistic,
               scale: 0.92,
               offsetX: -120.0,
               offsetY: 280.0,
@@ -295,7 +295,7 @@ class ProjectTemplate {
             // Background Phone 1 corner (entering from the left edge)
             CanvasDeviceItem(
               id: 'dev_screen2_peer',
-              frameStyle: DeviceFrameStyle.iphone16ProMax,
+              frameStyle: DeviceFrameStyle.realistic,
               scale: 0.92,
               offsetX: -1120.0,
               offsetY: 280.0,
@@ -305,7 +305,7 @@ class ProjectTemplate {
             // Foreground Main Phone 2 (Large hero zoomed-in phone, tilted -22°)
             CanvasDeviceItem(
               id: 'dev_screen2_main',
-              frameStyle: DeviceFrameStyle.iphone16ProMax,
+              frameStyle: DeviceFrameStyle.realistic,
               scale: 1.28,
               offsetX: -60.0,
               offsetY: -60.0,

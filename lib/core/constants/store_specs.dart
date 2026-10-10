@@ -1,34 +1,72 @@
 import 'package:flutter/material.dart';
 
+/// Store targets the project can be previewed and exported for.
+///
+/// Every screen is authored once in [DesignSpace] coordinates; a target only
+/// decides the output pixel size (and which realistic phone chassis is drawn).
 enum TargetPlatformType {
-  appStore('Apple App Store', 'iPhone 16 Pro Max', 1320, 2868),
-  googlePlay('Google Play Store', 'Samsung S26 Ultra', 1440, 2560);
+  appStore('Apple App Store', 'App Store', 'iPhone 16 Pro Max', 'iPhone', 1320, 2868),
+  googlePlay('Google Play Store', 'Google Play', 'Galaxy S26 Ultra', 'Android', 1440, 2560);
 
   final String platformName;
+  final String shortName;
   final String deviceName;
+  final String screenshotLabel;
   final double targetWidth;
   final double targetHeight;
 
   const TargetPlatformType(
     this.platformName,
+    this.shortName,
     this.deviceName,
+    this.screenshotLabel,
     this.targetWidth,
     this.targetHeight,
   );
 
   double get aspectRatio => targetWidth / targetHeight;
 
-  /// Baseline aspect ratio (Apple App Store standard: 1320 / 2868 = 0.46025)
-  static const double referenceAspectRatio = 1320.0 / 2868.0;
+  Size get targetSize => Size(targetWidth, targetHeight);
 
-  /// Baseline canvas height (Apple App Store standard: 2868)
-  static const double referenceHeight = 2868.0;
+  String get dimensionsLabel => '${targetWidth.toInt()}×${targetHeight.toInt()}';
 
-  /// Relative scale correction factor to maintain identical visual occupancy across store aspect ratios
-  double get scaleCorrectionFactor => referenceAspectRatio / aspectRatio;
+  String get exportFolderName => this == TargetPlatformType.appStore
+      ? 'Apple_App_Store_${targetWidth.toInt()}x${targetHeight.toInt()}'
+      : 'Google_Play_Store_${targetWidth.toInt()}x${targetHeight.toInt()}';
 
-  /// Height scale factor relative to standard reference height
-  double get yOffsetScaleFactor => targetHeight / referenceHeight;
+  TargetPlatformType get other =>
+      this == TargetPlatformType.appStore ? TargetPlatformType.googlePlay : TargetPlatformType.appStore;
+}
+
+/// The single, store-independent coordinate system every screen is designed in.
+///
+/// It matches the Apple App Store 6.9" canvas so the Apple export is a 1:1
+/// render. Other targets (Google Play) render the same design with one uniform
+/// scale, centred on their canvas, so the composition is identical everywhere.
+class DesignSpace {
+  DesignSpace._();
+
+  static const double width = 1320.0;
+  static const double height = 2868.0;
+  static const Size size = Size(width, height);
+  static const double aspectRatio = width / height;
+
+  /// Stored element offsets are expressed in these units: X in 1/1000 of the
+  /// design width, Y in 1/2000 of the design height.
+  static const double offsetUnitX = width / 1000.0;
+  static const double offsetUnitY = height / 2000.0;
+
+  /// Font sizes in the models are authored for a 1000px-wide canvas.
+  static const double textScale = width / 1000.0;
+
+  /// Phone frame body width as a fraction of the design width.
+  static const double deviceWidthFraction = 0.72;
+
+  /// Width of a custom image asset at scale 1.0, as a fraction of the design width.
+  static const double customImageWidthFraction = 0.4;
+
+  /// Maximum width a headline may take before it wraps, as a fraction of the design width.
+  static const double maxTextWidthFraction = 0.92;
 }
 
 enum LayoutMode {
@@ -44,29 +82,41 @@ enum LayoutMode {
   const LayoutMode(this.title, this.description);
 }
 
+/// Visual style of a phone frame. [realistic] is store-aware: it draws an
+/// iPhone on the App Store and a Galaxy on Google Play with the exact same
+/// footprint, so the layout never shifts between stores.
 enum DeviceFrameStyle {
-  iphone16ProMax('iPhone 16 Pro Max', 'Dynamic Island, ultra-thin bezels, titanium edge'),
-  samsungS26Ultra('Samsung S26 Ultra', 'Sleek hole-punch, flat display, modern industrial frame'),
+  realistic('Realistic Phone', 'iPhone 16 Pro Max on the App Store, Galaxy S26 Ultra on Google Play'),
   minimalOutline('Minimal Dark Frame', 'Universal clean rounded frame'),
   none('Raw Screenshot', 'No frame border, shadow only');
 
-  final String name;
+  /// Display label. (Deliberately not called `name`, which is the enum identifier used in JSON.)
+  final String label;
   final String description;
-  const DeviceFrameStyle(this.name, this.description);
+  const DeviceFrameStyle(this.label, this.description);
 
-  static List<DeviceFrameStyle> availableForPlatform(TargetPlatformType platform) {
-    if (platform == TargetPlatformType.appStore) {
-      return [
-        DeviceFrameStyle.iphone16ProMax,
-        DeviceFrameStyle.minimalOutline,
-        DeviceFrameStyle.none,
-      ];
-    } else {
-      return [
-        DeviceFrameStyle.samsungS26Ultra,
-        DeviceFrameStyle.minimalOutline,
-        DeviceFrameStyle.none,
-      ];
+  /// Human label for the current preview store (e.g. "iPhone 16 Pro Max").
+  String labelFor(TargetPlatformType platform) => this == DeviceFrameStyle.realistic ? platform.deviceName : label;
+
+  /// Parses a serialized style. Accepts the enum identifier, the legacy
+  /// per-device identifiers, and the display labels older drafts stored.
+  static DeviceFrameStyle fromName(String? value) {
+    switch (value) {
+      case 'realistic':
+      case 'iphone16ProMax':
+      case 'samsungS26Ultra':
+      case 'Realistic Phone':
+      case 'iPhone 16 Pro Max':
+      case 'Samsung S26 Ultra':
+        return DeviceFrameStyle.realistic;
+      case 'minimalOutline':
+      case 'Minimal Dark Frame':
+        return DeviceFrameStyle.minimalOutline;
+      case 'none':
+      case 'Raw Screenshot':
+        return DeviceFrameStyle.none;
+      default:
+        return DeviceFrameStyle.realistic;
     }
   }
 }
