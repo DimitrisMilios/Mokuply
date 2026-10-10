@@ -64,7 +64,9 @@ class MultiCanvasWorkspace extends StatelessWidget {
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        // 2px per side = 4px between neighbouring screens, so the strip
+                        // reads as one continuous store listing.
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
                           border: Border.all(

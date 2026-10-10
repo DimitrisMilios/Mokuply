@@ -12,6 +12,9 @@ import '../services/file_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/canvas/canvas_mockup_widget.dart';
 
+/// Sections of the screen inspector shown when no element is selected.
+enum ScreenInspectorSection { layout, background, layers }
+
 /// Editor ViewModel — manages the multi-screen project, canvas elements and app flow.
 ///
 /// Every screen is authored once in [DesignSpace]; [platform] only selects
@@ -32,6 +35,9 @@ class EditorViewModel extends ChangeNotifier {
   String? _selectedDeviceId;
   String? _selectedImageId;
   String? _selectedTextId;
+
+  // Inspector section shown while nothing on the canvas is selected
+  ScreenInspectorSection _screenSection = ScreenInspectorSection.layout;
 
   // Export state
   bool _isExporting = false;
@@ -57,6 +63,7 @@ class EditorViewModel extends ChangeNotifier {
   String? get selectedDeviceId => _selectedDeviceId;
   String? get selectedImageId => _selectedImageId;
   String? get selectedTextId => _selectedTextId;
+  ScreenInspectorSection get screenSection => _screenSection;
 
   /// The active screen.
   TemplateData get data => _screenshots[_selectedIndex.clamp(0, _screenshots.length - 1)];
@@ -147,6 +154,24 @@ class EditorViewModel extends ChangeNotifier {
   void selectDevice(String deviceId) => selectElement(deviceId);
 
   void selectCustomImage(String imageId) => selectElement(imageId);
+
+  /// Deselects everything and opens [section] of the screen inspector.
+  void showScreenSection(ScreenInspectorSection section) {
+    _screenSection = section;
+    _clearSelection();
+    notifyListeners();
+  }
+
+  /// Uploads a screenshot for the store being previewed into the selected
+  /// (or first) phone frame and keeps that frame selected.
+  Future<void> uploadScreenshotToSelectedFrame() async {
+    final device = selectedDevice;
+    if (device == null) return;
+    _selectedDeviceId = device.id;
+    _selectedElementId = device.id;
+    notifyListeners();
+    await pickDeviceScreenshot(device.id, platform);
+  }
 
   void _clearSelection() {
     _selectedElementId = null;

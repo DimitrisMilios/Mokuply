@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../widgets/shared/ambient_background.dart';
+import 'widgets/action_rail.dart';
 import 'widgets/canvas_zoom_bar.dart';
 import 'widgets/editor_navbar.dart';
-import 'widgets/floating_sidebar.dart';
+import 'widgets/inspector_panel.dart';
 import 'widgets/multi_canvas_workspace.dart';
 import 'widgets/screenshot_reel_bar.dart';
 
@@ -56,26 +57,34 @@ class _EditorViewState extends State<EditorView> {
               child: EditorNavbar(),
             ),
 
-            // Layer 2: Floating Left Action Customization Sidebar
+            // Layer 2: Left action rail (add things, open screen sections)
             const Positioned(
               top: 98,
               bottom: 16,
               left: 16,
-              child: FloatingSidebar(),
+              child: ActionRail(),
             ),
 
-            // Layer 3: Floating Bottom Screenshot Reel Switcher
-            // (keeps clear of the collapsed sidebar on the left and the zoom bar on the right)
+            // Layer 3: Right inspector (edits whatever is selected)
+            const Positioned(
+              top: 98,
+              bottom: 86,
+              right: 16,
+              child: InspectorPanel(),
+            ),
+
+            // Layer 4: Floating Bottom Screenshot Reel Switcher
+            // (keeps clear of the rail on the left and the zoom bar on the right)
             const Positioned(
               bottom: 20,
-              left: 96,
+              left: 108,
               right: 200,
               child: Center(
                 child: ScreenshotReelBar(),
               ),
             ),
 
-            // Layer 4: Floating Bottom-Right Canvas Zoom & Navigation Bar
+            // Layer 5: Floating Bottom-Right Canvas Zoom & Navigation Bar
             Positioned(
               bottom: 20,
               right: 20,

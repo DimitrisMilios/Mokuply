@@ -158,6 +158,40 @@ void main() {
     });
   });
 
+  group('Inspector selection', () {
+    late EditorViewModel vm;
+
+    setUp(() {
+      vm = EditorViewModel();
+    });
+
+    test('adding an element selects it so the inspector opens on it', () {
+      vm.addCustomTextElement();
+      expect(vm.selectedElementId, startsWith('txt_'));
+      vm.addDeviceFrame();
+      expect(vm.selectedElementId, startsWith('dev_'));
+      vm.addCustomImageItem(Uint8List.fromList([1]));
+      expect(vm.selectedElementId, startsWith('img_'));
+    });
+
+    test('showScreenSection clears the selection and remembers the section', () {
+      vm.addCustomTextElement();
+      vm.showScreenSection(ScreenInspectorSection.background);
+      expect(vm.selectedElementId, isNull);
+      expect(vm.selectedTextId, isNull);
+      expect(vm.screenSection, ScreenInspectorSection.background);
+    });
+
+    test('headline and subtitle are selectable by id', () {
+      vm.selectElement('title');
+      expect(vm.selectedElementId, 'title');
+      vm.selectElement('subtitle');
+      expect(vm.selectedElementId, 'subtitle');
+      vm.selectElement(null);
+      expect(vm.selectedElementId, isNull);
+    });
+  });
+
   group('Per-store screenshots', () {
     late EditorViewModel vm;
 

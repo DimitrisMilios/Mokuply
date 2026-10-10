@@ -59,7 +59,7 @@ class CanvasMockupWidget extends StatelessWidget {
     final vm = isExporting ? null : Provider.of<EditorViewModel>(context, listen: false);
     final decoration = _backgroundDecoration;
 
-    return Container(
+    Widget canvas = Container(
       width: canvasSize.width,
       height: canvasSize.height,
       decoration: decoration.copyWith(color: decoration.color ?? Colors.black),
@@ -79,6 +79,22 @@ class CanvasMockupWidget extends StatelessWidget {
         ),
       ),
     );
+
+    if (vm != null) {
+      // Tapping empty background deselects, so the inspector returns to the
+      // screen settings. Elements claim their own pointers, so this never
+      // fires for a tap on a phone, image or text.
+      canvas = GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          vm.selectScreenshot(itemIndex);
+          vm.selectElement(null);
+        },
+        child: canvas,
+      );
+    }
+
+    return canvas;
   }
 
   Widget _buildDesignLayer(EditorViewModel? vm, CanvasGeometry geometry) {

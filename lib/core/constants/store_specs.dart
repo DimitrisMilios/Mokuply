@@ -185,7 +185,8 @@ class StoreSpecs {
     ),
   ];
 
-  static const List<String> fontFamilies = [
+  /// Suggested families shown at the top of the font picker; any Google Font is allowed.
+  static const List<String> popularFonts = [
     'Inter',
     'Outfit',
     'Roboto',
