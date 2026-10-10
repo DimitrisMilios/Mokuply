@@ -68,7 +68,7 @@ class HeroSection extends StatelessWidget {
 
         // Prominent Middle Glass CTA Card ("Do you want to start a project?")
         GlassContainer(
-          width: 540,
+          width: (MediaQuery.sizeOf(context).width - 48).clamp(260.0, 540.0),
           opacity: 0.8,
           borderRadius: BorderRadius.circular(28),
           borderColor: AppColors.glassBorder,

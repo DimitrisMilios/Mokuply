@@ -41,12 +41,7 @@ class HomeView extends StatelessWidget {
             ),
 
             // 2. Sticky Floating Glass Header Navbar
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: HomeNavbar(),
-            ),
+            Positioned(top: 0, left: 0, right: 0, child: HomeNavbar()),
           ],
         ),
       ),
@@ -155,11 +150,15 @@ class _TemplateStoreGrid extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runSpacing: 12,
+          spacing: 12,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: const [
                 Text(
                   'Starter Mockup Templates',
@@ -177,7 +176,10 @@ class _TemplateStoreGrid extends StatelessWidget {
                 ),
               ],
             ),
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 OutlinedButton.icon(
                   onPressed: () => _handleImportTemplate(context),
@@ -188,7 +190,10 @@ class _TemplateStoreGrid extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
                   ),
                   icon: const Icon(Icons.file_upload_outlined, size: 18),
-                  label: const Text('Import .mokuply Template', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  label: const Text(
+                    'Import .mokuply Template',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Container(
@@ -216,15 +221,19 @@ class _TemplateStoreGrid extends StatelessWidget {
         const SizedBox(height: 24),
         LayoutBuilder(
           builder: (ctx, constraints) {
-            final isWide = constraints.maxWidth > 900;
+            final double width = constraints.maxWidth;
+            final int columns = width > 1100 ? 3 : (width > 640 ? 2 : 1);
+            // Cards hold a fixed-height preview plus text, so keep their height
+            // close to constant instead of scaling with the column width.
+            final double columnWidth = (width - 20 * (columns - 1)) / columns;
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: isWide ? 3 : 1,
+                crossAxisCount: columns,
                 crossAxisSpacing: 20,
                 mainAxisSpacing: 20,
-                childAspectRatio: 0.9,
+                childAspectRatio: columnWidth / 420,
               ),
               itemCount: templates.length,
               itemBuilder: (ctx, index) {

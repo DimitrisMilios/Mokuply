@@ -65,10 +65,11 @@ class _EditorViewState extends State<EditorView> {
             ),
 
             // Layer 3: Floating Bottom Screenshot Reel Switcher
+            // (keeps clear of the collapsed sidebar on the left and the zoom bar on the right)
             const Positioned(
               bottom: 20,
-              left: 0,
-              right: 0,
+              left: 96,
+              right: 200,
               child: Center(
                 child: ScreenshotReelBar(),
               ),

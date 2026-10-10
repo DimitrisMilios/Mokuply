@@ -195,12 +195,24 @@ void main() {
       expect(g.elementCenter(anchorFraction: 0.5, offsetX: 0, offsetY: 0), const Offset(660, 1434));
     });
 
-    test('Google Play export fits the whole design by height and centres it', () {
+    test('Google Play shares the Apple canvas, so it also renders 1:1', () {
       final g = CanvasGeometry(TargetPlatformType.googlePlay.targetSize);
+      expect(TargetPlatformType.googlePlay.targetSize, TargetPlatformType.appStore.targetSize);
+      expect(g.scale, closeTo(1.0, 1e-9));
+      expect(g.elementCenter(anchorFraction: 0.5, offsetX: 0, offsetY: 0), const Offset(660, 1434));
+    });
+
+    test('a smaller canvas still fits the whole design and centres it', () {
+      final g = CanvasGeometry(const Size(1440, 2560));
       expect(g.scale, closeTo(2560 / 2868, 1e-9));
       expect(g.designAreaSize.height, closeTo(2560, 1e-6));
       expect(g.designAreaSize.width, lessThan(1440));
       expect(g.elementCenter(anchorFraction: 0.5, offsetX: 0, offsetY: 0), const Offset(720, 1280));
+    });
+
+    test('font sizes are export pixels', () {
+      final g = CanvasGeometry(TargetPlatformType.appStore.targetSize);
+      expect(g.textScale, closeTo(1.0, 1e-9));
     });
 
     test('preview cards of equal height show both stores at the same scale', () {
@@ -210,9 +222,9 @@ void main() {
       expect(apple.scale, closeTo(google.scale, 1e-9));
     });
 
-    test('an element keeps the same relative position on both stores', () {
+    test('an element keeps the same relative position on canvases of different size', () {
       final apple = CanvasGeometry(TargetPlatformType.appStore.targetSize);
-      final google = CanvasGeometry(TargetPlatformType.googlePlay.targetSize);
+      final google = CanvasGeometry(const Size(1440, 2560));
 
       final a = apple.elementCenter(anchorFraction: 0.62, offsetX: 120, offsetY: -60);
       final b = google.elementCenter(anchorFraction: 0.62, offsetX: 120, offsetY: -60);
@@ -238,7 +250,7 @@ void main() {
   group('Device frame footprint', () {
     test('outer frame size depends only on scale, never on the store', () {
       final apple = CanvasGeometry(TargetPlatformType.appStore.targetSize);
-      final google = CanvasGeometry(TargetPlatformType.googlePlay.targetSize);
+      final google = CanvasGeometry(const Size(1440, 2560));
       expect(DeviceFrameWidget.outerWidthFor(apple.scale), closeTo(1320 * 0.72 + 20, 1e-9));
       expect(
         DeviceFrameWidget.outerWidthFor(google.scale) / DeviceFrameWidget.outerWidthFor(apple.scale),
@@ -279,6 +291,26 @@ void main() {
       expect(data.devices.single.frameStyle, DeviceFrameStyle.realistic);
       expect(data.devices.single.offsetX, -120.0);
       expect(data.devices.single.rotation, -22.0);
+    });
+
+    test('legacy drafts without a font unit are converted to export pixels', () {
+      final legacy = TemplateData.fromJson({
+        'titleSize': 70.0,
+        'subtitleSize': 32.0,
+        'customTextItems': [
+          {'id': 'txt_1', 'text': 'Hi', 'fontSize': 28.0},
+        ],
+      });
+      expect(legacy.titleSize, closeTo(70.0 * DesignSpace.legacyTextScale, 1e-9));
+      expect(legacy.subtitleSize, closeTo(32.0 * DesignSpace.legacyTextScale, 1e-9));
+      expect(legacy.customTextItems.single.fontSize, closeTo(28.0 * DesignSpace.legacyTextScale, 1e-9));
+    });
+
+    test('current drafts keep font sizes as written', () {
+      const data = TemplateData(titleSize: 120.0, subtitleSize: 48.0);
+      final reloaded = TemplateData.fromJson(data.toJson());
+      expect(reloaded.titleSize, 120.0);
+      expect(reloaded.subtitleSize, 48.0);
     });
 
     test('device items round-trip through JSON', () {

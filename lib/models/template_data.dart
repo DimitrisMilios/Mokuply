@@ -57,8 +57,8 @@ class TemplateData {
     this.subtitleText = 'Design high-res store screenshots in seconds',
     this.titleFont = 'Outfit',
     this.subtitleFont = 'Inter',
-    this.titleSize = 64.0,
-    this.subtitleSize = 30.0,
+    this.titleSize = 96.0,
+    this.subtitleSize = 42.0,
     this.titleWeight = FontWeight.w700,
     this.subtitleWeight = FontWeight.w500,
     this.textColor = Colors.white,
@@ -69,7 +69,7 @@ class TemplateData {
     this.customBackgroundColor,
     this.customGradientColors,
     this.customBackgroundImageBytes,
-    this.deviceScale = 0.85,
+    this.deviceScale = 0.92,
     this.deviceOffsetX = 0.0,
     this.deviceOffsetY = 0.0,
     this.deviceRotation = 0.0,
@@ -200,12 +200,16 @@ class TemplateData {
       'subtitleOffsetY': subtitleOffsetY,
       'devices': devices.map((d) => d.toJson()).toList(),
       'customTextItems': customTextItems.map((t) => t.toJson()).toList(),
+      DesignSpace.textUnitKey: DesignSpace.textUnitPixels,
     };
   }
 
   /// Legacy per-store keys (`appStoreTextOffsetX`, ...) from older drafts are
   /// ignored; the shared offsets were always written alongside them.
   factory TemplateData.fromJson(Map<String, dynamic> json) {
+    // Drafts saved before font sizes became export pixels carry no unit marker.
+    final double fontScale =
+        json[DesignSpace.textUnitKey] == DesignSpace.textUnitPixels ? 1.0 : DesignSpace.legacyTextScale;
     final titleWeightIdx = json['titleWeightIndex'] as int? ?? 6;
     final subWeightIdx = json['subtitleWeightIndex'] as int? ?? 4;
 
@@ -223,8 +227,8 @@ class TemplateData {
       subtitleText: json['subtitleText'] as String? ?? '',
       titleFont: json['titleFont'] as String? ?? 'Outfit',
       subtitleFont: json['subtitleFont'] as String? ?? 'Inter',
-      titleSize: (json['titleSize'] as num?)?.toDouble() ?? 64.0,
-      subtitleSize: (json['subtitleSize'] as num?)?.toDouble() ?? 30.0,
+      titleSize: ((json['titleSize'] as num?)?.toDouble() ?? 70.0) * fontScale,
+      subtitleSize: ((json['subtitleSize'] as num?)?.toDouble() ?? 32.0) * fontScale,
       titleWeight: (titleWeightIdx >= 0 && titleWeightIdx < FontWeight.values.length)
           ? FontWeight.values[titleWeightIdx]
           : FontWeight.w700,
@@ -247,7 +251,7 @@ class TemplateData {
       customGradientColors: json['customGradientColors'] != null
           ? (json['customGradientColors'] as List).map((c) => Color(c as int)).toList()
           : null,
-      deviceScale: (json['deviceScale'] as num?)?.toDouble() ?? 0.85,
+      deviceScale: (json['deviceScale'] as num?)?.toDouble() ?? 0.92,
       deviceOffsetX: (json['deviceOffsetX'] as num?)?.toDouble() ?? 0.0,
       deviceOffsetY: (json['deviceOffsetY'] as num?)?.toDouble() ?? 0.0,
       deviceRotation: (json['deviceRotation'] as num?)?.toDouble() ?? 0.0,
@@ -261,7 +265,7 @@ class TemplateData {
               .toList() ??
           const [],
       customTextItems: (json['customTextItems'] as List?)
-              ?.map((t) => CanvasTextItem.fromJson(t as Map<String, dynamic>))
+              ?.map((t) => CanvasTextItem.fromJson(t as Map<String, dynamic>, fontScale: fontScale))
               .toList() ??
           const [],
     );

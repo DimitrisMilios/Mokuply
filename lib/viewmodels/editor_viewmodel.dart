@@ -348,7 +348,7 @@ class EditorViewModel extends ChangeNotifier {
 
   void resetCanvasOffsets() {
     final resetDevices = data.effectiveDevices
-        .map((d) => d.copyWith(offsetX: 0.0, offsetY: 0.0, rotation: 0.0, scale: 0.85))
+        .map((d) => d.copyWith(offsetX: 0.0, offsetY: 0.0, rotation: 0.0, scale: 0.92))
         .toList();
 
     _updateCurrentScreenshot(data.copyWith(
@@ -356,7 +356,7 @@ class EditorViewModel extends ChangeNotifier {
       deviceOffsetX: 0.0,
       deviceOffsetY: 0.0,
       deviceRotation: 0.0,
-      deviceScale: 0.85,
+      deviceScale: 0.92,
       textOffsetX: 0.0,
       textOffsetY: 0.0,
       subtitleOffsetX: 0.0,
@@ -600,7 +600,7 @@ class EditorViewModel extends ChangeNotifier {
 
   void setLayoutMode(LayoutMode mode) {
     double targetRotation = 0.0;
-    double targetScale = 0.85;
+    double targetScale = 0.92;
     double targetOffsetY = 0.0;
 
     switch (mode) {
@@ -708,7 +708,7 @@ class EditorViewModel extends ChangeNotifier {
     }
   }
 
-  /// Exports one store (Apple 1320×2868 or Google 1440×2560) as a ZIP bundle.
+  /// Exports one store as a ZIP bundle (both stores share the 1320×2868 canvas).
   Future<void> exportPlatformPack(TargetPlatformType target, {required BuildContext context}) {
     return _runExport(_screenshots.length, 'Preparing screenshots...', () async {
       final files = await _renderStore(target, context: context, progressOffset: 0);

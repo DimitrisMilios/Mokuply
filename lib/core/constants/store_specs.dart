@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 /// decides the output pixel size (and which realistic phone chassis is drawn).
 enum TargetPlatformType {
   appStore('Apple App Store', 'App Store', 'iPhone 16 Pro Max', 'iPhone', 1320, 2868),
-  googlePlay('Google Play Store', 'Google Play', 'Galaxy S26 Ultra', 'Android', 1440, 2560);
+  googlePlay('Google Play Store', 'Google Play', 'Galaxy S26 Ultra', 'Android', 1320, 2868);
 
   final String platformName;
   final String shortName;
@@ -56,8 +56,16 @@ class DesignSpace {
   static const double offsetUnitX = width / 1000.0;
   static const double offsetUnitY = height / 2000.0;
 
-  /// Font sizes in the models are authored for a 1000px-wide canvas.
-  static const double textScale = width / 1000.0;
+  /// Font sizes in the models are real pixels on the 1320×2868 export.
+  static const double textScale = 1.0;
+
+  /// Drafts saved before font sizes became export pixels used a 1000px-wide
+  /// reference, so their values are multiplied by this on load.
+  static const double legacyTextScale = width / 1000.0;
+
+  /// Marker written to JSON so loaders can tell the two font units apart.
+  static const String textUnitKey = 'textUnit';
+  static const String textUnitPixels = 'px';
 
   /// Phone frame body width as a fraction of the design width.
   static const double deviceWidthFraction = 0.72;
@@ -150,29 +158,30 @@ class ColorGradientPreset {
 
 class StoreSpecs {
   static const List<ColorGradientPreset> gradientPresets = [
+    // Softer, lower-contrast stops so headlines and phones stay the focus.
     ColorGradientPreset(
       name: 'Midnight Cyber',
-      colors: [Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF0284C7)],
+      colors: [Color(0xFF0B1220), Color(0xFF15224A), Color(0xFF0E7490)],
     ),
     ColorGradientPreset(
       name: 'Aurora Borealis',
-      colors: [Color(0xFF064E3B), Color(0xFF0D9488), Color(0xFF3B82F6)],
+      colors: [Color(0xFF052E2B), Color(0xFF0F766E), Color(0xFF2563EB)],
     ),
     ColorGradientPreset(
       name: 'Sunset Glow',
-      colors: [Color(0xFF4C0519), Color(0xFF9F1239), Color(0xFFF97316)],
+      colors: [Color(0xFF2B0E1E), Color(0xFF8F2A4D), Color(0xFFF08A4B)],
     ),
     ColorGradientPreset(
       name: 'Neon Violet',
-      colors: [Color(0xFF311042), Color(0xFF6B21A8), Color(0xFFEC4899)],
+      colors: [Color(0xFF1E0B33), Color(0xFF5B21B6), Color(0xFFDB2777)],
     ),
     ColorGradientPreset(
       name: 'Titanium Dark',
-      colors: [Color(0xFF18181B), Color(0xFF27272A), Color(0xFF09090B)],
+      colors: [Color(0xFF111113), Color(0xFF1F1F23), Color(0xFF0A0A0B)],
     ),
     ColorGradientPreset(
       name: 'Clean Studio Light',
-      colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
+      colors: [Color(0xFFFAFAF9), Color(0xFFF1F2F4), Color(0xFFE2E6EB)],
     ),
   ];
 

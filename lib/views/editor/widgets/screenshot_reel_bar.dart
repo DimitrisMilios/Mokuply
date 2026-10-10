@@ -23,11 +23,17 @@ class ScreenshotReelBar extends StatelessWidget {
           const Icon(Icons.photo_library_rounded, color: AppColors.primary, size: 18),
           const SizedBox(width: 8),
           Text(
-            'Screenshots Set (${vm.screenshotsCount}):',
+            'Screens (${vm.screenshotsCount}):',
             style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
           ),
           const SizedBox(width: 12),
-          ...List.generate(vm.screenshotsCount, (index) {
+          // Chips scroll horizontally when the set is long or the window is narrow.
+          Flexible(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(vm.screenshotsCount, (index) {
             final isSelected = vm.selectedIndex == index;
             return Padding(
               padding: const EdgeInsets.only(right: 6),
@@ -52,7 +58,10 @@ class ScreenshotReelBar extends StatelessWidget {
                 ),
               ),
             );
-          }),
+                }),
+              ),
+            ),
+          ),
           const SizedBox(width: 6),
           IconButton(
             onPressed: () => vm.addScreenshot(),

@@ -24,7 +24,7 @@ class CanvasDeviceItem {
     this.frameStyle = DeviceFrameStyle.realistic,
     this.iosScreenshotBytes,
     this.androidScreenshotBytes,
-    this.scale = 0.85,
+    this.scale = 0.92,
     this.offsetX = 0.0,
     this.offsetY = 0.0,
     this.rotation = 0.0,
@@ -93,7 +93,7 @@ class CanvasDeviceItem {
     return CanvasDeviceItem(
       id: json['id'] as String? ?? 'dev_${DateTime.now().millisecondsSinceEpoch}',
       frameStyle: DeviceFrameStyle.fromName(json['frameStyle'] as String?),
-      scale: (json['scale'] as num?)?.toDouble() ?? 0.85,
+      scale: (json['scale'] as num?)?.toDouble() ?? 0.92,
       offsetX: (json['offsetX'] as num?)?.toDouble() ?? 0.0,
       offsetY: (json['offsetY'] as num?)?.toDouble() ?? 0.0,
       rotation: (json['rotation'] as num?)?.toDouble() ?? 0.0,

@@ -19,7 +19,7 @@ class CanvasTextItem {
     required this.id,
     required this.text,
     this.font = 'Outfit',
-    this.fontSize = 32.0,
+    this.fontSize = 40.0,
     this.color = Colors.white,
     this.weight = FontWeight.w600,
     this.alignment = TextAlign.center,
@@ -70,14 +70,15 @@ class CanvasTextItem {
   }
 
   /// Legacy per-store offset keys in older drafts are ignored; the shared
-  /// `offsetX`/`offsetY` were always written alongside them.
-  factory CanvasTextItem.fromJson(Map<String, dynamic> json) {
+  /// `offsetX`/`offsetY` were always written alongside them. [fontScale]
+  /// converts font sizes from drafts saved in the old 1000px-wide unit.
+  factory CanvasTextItem.fromJson(Map<String, dynamic> json, {double fontScale = 1.0}) {
     final weightIdx = json['weightIndex'] as int? ?? 5;
     return CanvasTextItem(
       id: json['id'] as String? ?? 'txt_${DateTime.now().millisecondsSinceEpoch}',
       text: json['text'] as String? ?? '',
       font: json['font'] as String? ?? 'Outfit',
-      fontSize: (json['fontSize'] as num?)?.toDouble() ?? 32.0,
+      fontSize: ((json['fontSize'] as num?)?.toDouble() ?? 32.0) * fontScale,
       color: Color(json['color'] as int? ?? 0xFFFFFFFF),
       weight: (weightIdx >= 0 && weightIdx < FontWeight.values.length)
           ? FontWeight.values[weightIdx]

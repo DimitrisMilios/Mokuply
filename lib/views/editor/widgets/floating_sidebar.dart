@@ -33,11 +33,14 @@ class _FloatingSidebarState extends State<FloatingSidebar> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<EditorViewModel>();
+    // Never let the sidebar swallow the canvas on narrow windows.
+    final double screenWidth = MediaQuery.sizeOf(context).width;
+    final double expandedWidth = (screenWidth - 140).clamp(240.0, AppDimensions.sidebarWidth);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOutCubic,
-      width: _isCollapsed ? 64.0 : AppDimensions.sidebarWidth,
+      width: _isCollapsed ? 64.0 : expandedWidth,
       child: GlassContainer(
         opacity: 0.85,
         blurX: 16.0,
@@ -57,13 +60,12 @@ class _FloatingSidebarState extends State<FloatingSidebar> {
           children: [
             // Floating Sidebar Header
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: _isCollapsed ? 8 : 14, vertical: 12),
               decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: AppColors.glassBorder, width: 1.0),
-                ),
+                border: Border(bottom: BorderSide(color: AppColors.glassBorder, width: 1.0)),
               ),
               child: Row(
+                mainAxisAlignment: _isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
                 children: [
                   if (!_isCollapsed) ...[
                     Container(
@@ -72,11 +74,7 @@ class _FloatingSidebarState extends State<FloatingSidebar> {
                         color: AppColors.primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
-                        Icons.tune_rounded,
-                        color: AppColors.primary,
-                        size: 18,
-                      ),
+                      child: const Icon(Icons.tune_rounded, color: AppColors.primary, size: 18),
                     ),
                     const SizedBox(width: 10),
                     const Text(
@@ -136,62 +134,60 @@ class _FloatingSidebarState extends State<FloatingSidebar> {
   }
 
   Widget _buildCollapsedIcons(EditorViewModel vm) {
-    return Column(
-      children: [
-        const SizedBox(height: 12),
-        IconButton(
-          onPressed: _toggleCollapsed,
-          tooltip: 'Active Screen #${vm.selectedIndex + 1}',
-          icon: CircleAvatar(
-            radius: 14,
-            backgroundColor: AppColors.primary,
-            child: Text(
-              '${vm.selectedIndex + 1}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          IconButton(
+            onPressed: _toggleCollapsed,
+            tooltip: 'Active Screen #${vm.selectedIndex + 1}',
+            icon: CircleAvatar(
+              radius: 14,
+              backgroundColor: AppColors.primary,
+              child: Text(
+                '${vm.selectedIndex + 1}',
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
               ),
             ),
           ),
-        ),
-        const Divider(color: AppColors.glassBorder, indent: 12, endIndent: 12),
-        IconButton(
-          onPressed: _toggleCollapsed,
-          tooltip: 'Screenshots',
-          icon: const Icon(Icons.image_outlined, color: AppColors.primary, size: 22),
-        ),
-        const SizedBox(height: 8),
-        IconButton(
-          onPressed: _toggleCollapsed,
-          tooltip: 'Custom Images',
-          icon: const Icon(Icons.add_photo_alternate_outlined, color: AppColors.primary, size: 22),
-        ),
-        const SizedBox(height: 8),
-        IconButton(
-          onPressed: _toggleCollapsed,
-          tooltip: 'Layout',
-          icon: const Icon(Icons.dashboard_customize_outlined, color: AppColors.primary, size: 22),
-        ),
-        const SizedBox(height: 8),
-        IconButton(
-          onPressed: _toggleCollapsed,
-          tooltip: 'Background',
-          icon: const Icon(Icons.palette_outlined, color: AppColors.primary, size: 22),
-        ),
-        const SizedBox(height: 8),
-        IconButton(
-          onPressed: _toggleCollapsed,
-          tooltip: 'Typography',
-          icon: const Icon(Icons.text_fields_rounded, color: AppColors.primary, size: 22),
-        ),
-        const SizedBox(height: 8),
-        IconButton(
-          onPressed: _toggleCollapsed,
-          tooltip: 'Device Frame',
-          icon: const Icon(Icons.phone_iphone_rounded, color: AppColors.primary, size: 22),
-        ),
-      ],
+          const Divider(color: AppColors.glassBorder, indent: 12, endIndent: 12),
+          IconButton(
+            onPressed: _toggleCollapsed,
+            tooltip: 'Screenshots',
+            icon: const Icon(Icons.image_outlined, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(height: 8),
+          IconButton(
+            onPressed: _toggleCollapsed,
+            tooltip: 'Custom Images',
+            icon: const Icon(Icons.add_photo_alternate_outlined, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(height: 8),
+          IconButton(
+            onPressed: _toggleCollapsed,
+            tooltip: 'Layout',
+            icon: const Icon(Icons.dashboard_customize_outlined, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(height: 8),
+          IconButton(
+            onPressed: _toggleCollapsed,
+            tooltip: 'Background',
+            icon: const Icon(Icons.palette_outlined, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(height: 8),
+          IconButton(
+            onPressed: _toggleCollapsed,
+            tooltip: 'Typography',
+            icon: const Icon(Icons.text_fields_rounded, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(height: 8),
+          IconButton(
+            onPressed: _toggleCollapsed,
+            tooltip: 'Device Frame',
+            icon: const Icon(Icons.phone_iphone_rounded, color: AppColors.primary, size: 22),
+          ),
+        ],
+      ),
     );
   }
 }
