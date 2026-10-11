@@ -8,6 +8,7 @@ import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/color_swatch_button.dart';
 import '../../../widgets/shared/font_picker_field.dart';
 import '../../../widgets/shared/labeled_slider.dart';
+import '../widgets/multi_canvas_workspace.dart';
 
 /// Edits the headline, the subtitle, or an extra text element, depending on [elementId].
 class TextInspector extends StatefulWidget {
@@ -102,12 +103,20 @@ class _TextInspectorState extends State<TextInspector> {
         FontPickerField(value: target.font, onChanged: target.setFont),
         const SizedBox(height: 12),
         LabeledSlider(
-          label: 'Size',
+          label: 'Size on export',
           valueText: '${target.fontSize.toInt()}px',
           value: target.fontSize.clamp(target.minSize, target.maxSize),
           min: target.minSize,
           max: target.maxSize,
           onChanged: target.setFontSize,
+        ),
+        Text(
+          // Sizes are real pixels on the 1320×2868 export; the preview card is
+          // much smaller, which is why the canvas text looks tiny next to the number.
+          '${target.fontSize.toInt()}px on the ${DesignSpace.width.toInt()}×${DesignSpace.height.toInt()} '
+          'export ≈ ${(target.fontSize * MultiCanvasWorkspace.previewHeight / DesignSpace.height).round()}px '
+          'on the preview card at 100% zoom.',
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 10.5, height: 1.3),
         ),
         const SizedBox(height: 10),
         _buildWeightAlignColorRow(target),
