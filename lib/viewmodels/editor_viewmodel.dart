@@ -14,7 +14,8 @@ import '../services/storage_service.dart';
 import '../widgets/canvas/canvas_mockup_widget.dart';
 
 /// Sections of the screen inspector shown when no element is selected.
-enum ScreenInspectorSection { layout, background, layers }
+/// (Layers are always listed at the top of the inspector.)
+enum ScreenInspectorSection { layout, background }
 
 /// Editor ViewModel — manages the multi-screen project, canvas elements and app flow.
 ///
@@ -39,6 +40,13 @@ class EditorViewModel extends ChangeNotifier {
 
   // Inspector section shown while nothing on the canvas is selected
   ScreenInspectorSection _screenSection = ScreenInspectorSection.layout;
+
+  // Canvas rows: both stores live side by side, or only the active one.
+  bool _showBothStores = true;
+
+  // Bumped when the canvas asks the inspector to focus its text field
+  // (double-click on a text element).
+  int _textFocusRequest = 0;
 
   // Export state
   bool _isExporting = false;
@@ -65,11 +73,24 @@ class EditorViewModel extends ChangeNotifier {
   String? get selectedImageId => _selectedImageId;
   String? get selectedTextId => _selectedTextId;
   ScreenInspectorSection get screenSection => _screenSection;
+  bool get showBothStores => _showBothStores;
+  int get textFocusRequest => _textFocusRequest;
+
+  /// Store rows drawn on the canvas, top to bottom.
+  List<TargetPlatformType> get visibleStores =>
+      _showBothStores ? const [TargetPlatformType.appStore, TargetPlatformType.googlePlay] : [platform];
 
   /// The active screen.
   TemplateData get data => _screenshots[_selectedIndex.clamp(0, _screenshots.length - 1)];
 
-  /// Store currently shown in the preview. Both stores are always exported.
+  /// Display name of screen [index] (falls back to its number).
+  String screenNameAt(int index) {
+    final name = _screenshots[index].name.trim();
+    return name.isEmpty ? 'Screen ${index + 1}' : name;
+  }
+
+  /// Active store: the row last clicked on the canvas. Screenshot uploads and
+  /// single-store downloads target it. Both stores are always exported.
   TargetPlatformType get platform => data.platform;
   LayoutMode get layoutMode => data.layoutMode;
   DeviceFrameStyle get frameStyle => selectedDevice?.frameStyle ?? data.frameStyle;
@@ -161,6 +182,178 @@ class EditorViewModel extends ChangeNotifier {
     _screenSection = section;
     _clearSelection();
     notifyListeners();
+  }
+
+  void setShowBothStores(bool value) {
+    if (_showBothStores == value) return;
+    _showBothStores = value;
+    notifyListeners();
+  }
+
+  /// Asks the inspector to focus the text field of the selected text element.
+  void requestTextFocus() {
+    _textFocusRequest++;
+    notifyListeners();
+  }
+
+  // --- Generic element operations (any element type, by id) ---
+
+  /// True when [id] refers to an element that can be scaled with the corner handles.
+  bool elementExists(String id) {
+    if (id == 'title' || id == 'subtitle') return true;
+    return devices.any((d) => d.id == id) ||
+        customImageItems.any((i) => i.id == id) ||
+        customTextItems.any((t) => t.id == id);
+  }
+
+  /// Resizes any element of screen [index]: phone frames and images take a
+  /// scale factor, text elements take a font size in export pixels.
+  void resizeElement(int index, String id, double value) {
+    if (index < 0 || index >= _screenshots.length) return;
+    final screen = _screenshots[index];
+    final TemplateData updated;
+
+    if (id == 'title') {
+      updated = screen.copyWith(titleSize: value.clamp(TextSizeLimits.titleMin, TextSizeLimits.titleMax));
+    } else if (id == 'subtitle') {
+      updated = screen.copyWith(subtitleSize: value.clamp(TextSizeLimits.subtitleMin, TextSizeLimits.subtitleMax));
+    } else if (id.startsWith('dev_')) {
+      final v = value.clamp(ScaleLimits.deviceMin, ScaleLimits.deviceMax);
+      updated = screen.copyWith(
+        devices: screen.effectiveDevices.map((d) => d.id == id ? d.copyWith(scale: v) : d).toList(),
+      );
+    } else if (id.startsWith('img_')) {
+      final v = value.clamp(ScaleLimits.imageMin, ScaleLimits.imageMax);
+      updated = screen.copyWith(
+        customImageItems: screen.customImageItems.map((i) => i.id == id ? i.copyWith(scale: v) : i).toList(),
+      );
+    } else if (id.startsWith('txt_')) {
+      final v = value.clamp(TextSizeLimits.customMin, TextSizeLimits.customMax);
+      updated = screen.copyWith(
+        customTextItems: screen.customTextItems.map((t) => t.id == id ? t.copyWith(fontSize: v) : t).toList(),
+      );
+    } else {
+      return;
+    }
+
+    _screenshots[index] = updated;
+    _scheduleAutoSave();
+    notifyListeners();
+  }
+
+  /// Rotates a phone frame, image or extra text element of screen [index].
+  /// The headline and subtitle cannot rotate.
+  void rotateElement(int index, String id, double degrees) {
+    if (index < 0 || index >= _screenshots.length) return;
+    final screen = _screenshots[index];
+    final TemplateData updated;
+    final double deg = _normalizeDegrees(degrees);
+
+    if (id.startsWith('dev_')) {
+      updated = screen.copyWith(
+        devices: screen.effectiveDevices.map((d) => d.id == id ? d.copyWith(rotation: deg) : d).toList(),
+      );
+    } else if (id.startsWith('img_')) {
+      updated = screen.copyWith(
+        customImageItems: screen.customImageItems.map((i) => i.id == id ? i.copyWith(rotation: deg) : i).toList(),
+      );
+    } else if (id.startsWith('txt_')) {
+      updated = screen.copyWith(
+        customTextItems: screen.customTextItems.map((t) => t.id == id ? t.copyWith(rotation: deg) : t).toList(),
+      );
+    } else {
+      return;
+    }
+
+    _screenshots[index] = updated;
+    _scheduleAutoSave();
+    notifyListeners();
+  }
+
+  static double _normalizeDegrees(double deg) {
+    double d = deg % 360.0;
+    if (d > 180.0) d -= 360.0;
+    if (d <= -180.0) d += 360.0;
+    return d;
+  }
+
+  /// Removes any element of the active screen. The headline and subtitle are
+  /// cleared instead of removed; the last phone frame is kept.
+  void removeElement(String id) {
+    if (id == 'title') {
+      setTitleText('');
+      if (_selectedElementId == id) selectElement(null);
+    } else if (id == 'subtitle') {
+      setSubtitleText('');
+      if (_selectedElementId == id) selectElement(null);
+    } else if (id.startsWith('dev_')) {
+      if (devices.length <= 1) return;
+      removeDeviceFrame(id);
+      selectElement(null);
+    } else if (id.startsWith('img_')) {
+      removeCustomImageItem(id);
+      selectElement(null);
+    } else if (id.startsWith('txt_')) {
+      removeCustomTextElement(id);
+      selectElement(null);
+    }
+  }
+
+  void removeSelectedElement() {
+    final id = _selectedElementId;
+    if (id != null) removeElement(id);
+  }
+
+  /// Duplicates a phone frame, image or extra text element next to the
+  /// original and selects the copy. The headline and subtitle are unique.
+  void duplicateElement(String id) {
+    final String stamp = DateTime.now().millisecondsSinceEpoch.toString();
+    const double nudge = 40.0;
+
+    if (id.startsWith('dev_')) {
+      final source = devices.where((d) => d.id == id).firstOrNull;
+      if (source == null) return;
+      final copy = source.copyWith(id: 'dev_$stamp', offsetX: source.offsetX + nudge, offsetY: source.offsetY + nudge);
+      _selectedDeviceId = copy.id;
+      _selectedElementId = copy.id;
+      _updateCurrentScreenshot(data.copyWith(devices: [...data.effectiveDevices, copy]));
+    } else if (id.startsWith('img_')) {
+      final source = customImageItems.where((i) => i.id == id).firstOrNull;
+      if (source == null) return;
+      final copy = source.copyWith(id: 'img_$stamp', offsetX: source.offsetX + nudge, offsetY: source.offsetY + nudge);
+      _selectedImageId = copy.id;
+      _selectedElementId = copy.id;
+      _updateCurrentScreenshot(data.copyWith(customImageItems: [...data.customImageItems, copy]));
+    } else if (id.startsWith('txt_')) {
+      final source = customTextItems.where((t) => t.id == id).firstOrNull;
+      if (source == null) return;
+      final copy = source.copyWith(id: 'txt_$stamp', offsetX: source.offsetX + nudge, offsetY: source.offsetY + nudge);
+      _selectedTextId = copy.id;
+      _selectedElementId = copy.id;
+      _updateCurrentScreenshot(data.copyWith(customTextItems: [...data.customTextItems, copy]));
+    }
+  }
+
+  /// Moves the selected element by ([dx], [dy]) offset units (keyboard arrows).
+  void nudgeSelected(double dx, double dy) {
+    final id = _selectedElementId;
+    if (id == null) return;
+    final current = elementOffset(id);
+    if (current == null) return;
+    moveElement(_selectedIndex, id, current.dx + dx, current.dy + dy);
+  }
+
+  /// Stored offset of any element on the active screen, or null if it is gone.
+  Offset? elementOffset(String id) {
+    if (id == 'title') return Offset(data.textOffsetX, data.textOffsetY);
+    if (id == 'subtitle') return Offset(data.subtitleOffsetX, data.subtitleOffsetY);
+    final dev = devices.where((d) => d.id == id).firstOrNull;
+    if (dev != null) return Offset(dev.offsetX, dev.offsetY);
+    final img = customImageItems.where((i) => i.id == id).firstOrNull;
+    if (img != null) return Offset(img.offsetX, img.offsetY);
+    final txt = customTextItems.where((t) => t.id == id).firstOrNull;
+    if (txt != null) return Offset(txt.offsetX, txt.offsetY);
+    return null;
   }
 
   /// Uploads a screenshot for the store being previewed into the selected
@@ -587,13 +780,24 @@ class EditorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Appends a screen that inherits the look of the active one (same layout,
+  /// background and typography) with placeholder words and no screenshots.
   void addScreenshot() {
-    _screenshots.add(TemplateData(
-      platform: platform,
-      frameStyle: frameStyle,
-      titleText: 'New Screenshot ${_screenshots.length + 1}',
-      subtitleText: 'Customize headlines and layout',
-      selectedGradientIndex: _screenshots.length % StoreSpecs.gradientPresets.length,
+    final src = data;
+    _screenshots.add(src.copyWith(
+      name: '',
+      titleText: 'New headline',
+      subtitleText: 'Describe this feature',
+      customBackgroundImageBytes: () => src.customBackgroundImageBytes,
+      devices: src.effectiveDevices
+          .map((d) => d.copyWith(
+                id: 'dev_${DateTime.now().millisecondsSinceEpoch}_${d.id.hashCode}',
+                iosScreenshotBytes: () => null,
+                androidScreenshotBytes: () => null,
+              ))
+          .toList(),
+      customImageItems: const [],
+      customTextItems: const [],
     ));
     _selectedIndex = _screenshots.length - 1;
     _clearSelection();
@@ -614,13 +818,93 @@ class EditorViewModel extends ChangeNotifier {
 
   void duplicateScreenshot(int index) {
     if (index >= 0 && index < _screenshots.length) {
-      final copy = _screenshots[index].copyWith(titleText: '${_screenshots[index].titleText} (Copy)');
+      final source = _screenshots[index];
+      final copy = source.copyWith(name: source.name.isEmpty ? '' : '${source.name} copy');
       _screenshots.insert(index + 1, copy);
       _selectedIndex = index + 1;
       _clearSelection();
       _scheduleAutoSave();
       notifyListeners();
     }
+  }
+
+  void setScreenName(int index, String name) {
+    if (index < 0 || index >= _screenshots.length) return;
+    _screenshots[index] = _screenshots[index].copyWith(name: name.trim());
+    _scheduleAutoSave();
+    notifyListeners();
+  }
+
+  /// Moves screen [from] to position [to], keeping it selected.
+  void moveScreenshot(int from, int to) {
+    if (from < 0 || from >= _screenshots.length) return;
+    if (to < 0 || to >= _screenshots.length || from == to) return;
+    final item = _screenshots.removeAt(from);
+    _screenshots.insert(to, item);
+    _selectedIndex = to;
+    _scheduleAutoSave();
+    notifyListeners();
+  }
+
+  /// Copies the look of screen [sourceIndex] (layout, background, typography,
+  /// frame style, positions, sizes and tilts) onto every other screen. Each
+  /// screen keeps its own words, screenshots, images and extra text.
+  void applyStyleToAllScreens(int sourceIndex) {
+    if (sourceIndex < 0 || sourceIndex >= _screenshots.length) return;
+    final src = _screenshots[sourceIndex];
+    final srcDevices = src.effectiveDevices;
+
+    for (int i = 0; i < _screenshots.length; i++) {
+      if (i == sourceIndex) continue;
+      final target = _screenshots[i];
+      final targetDevices = target.effectiveDevices;
+
+      // Frames pair up by position; extra source frames are not created, so
+      // no screen gains a frame without a screenshot.
+      final styledDevices = <CanvasDeviceItem>[];
+      for (int d = 0; d < targetDevices.length; d++) {
+        final ref = srcDevices[d < srcDevices.length ? d : srcDevices.length - 1];
+        styledDevices.add(targetDevices[d].copyWith(
+          frameStyle: ref.frameStyle,
+          scale: ref.scale,
+          offsetX: ref.offsetX,
+          offsetY: ref.offsetY,
+          rotation: ref.rotation,
+          hasShadow: ref.hasShadow,
+        ));
+      }
+
+      _screenshots[i] = target.copyWith(
+        layoutMode: src.layoutMode,
+        frameStyle: src.frameStyle,
+        titleFont: src.titleFont,
+        subtitleFont: src.subtitleFont,
+        titleSize: src.titleSize,
+        subtitleSize: src.subtitleSize,
+        titleWeight: src.titleWeight,
+        subtitleWeight: src.subtitleWeight,
+        textColor: src.textColor,
+        subtitleColor: src.subtitleColor,
+        titleAlignment: src.titleAlignment,
+        subtitleAlignment: src.subtitleAlignment,
+        selectedGradientIndex: src.selectedGradientIndex,
+        customBackgroundColor: () => src.customBackgroundColor,
+        customGradientColors: () => src.customGradientColors,
+        customBackgroundImageBytes: () => src.customBackgroundImageBytes,
+        deviceScale: src.deviceScale,
+        deviceOffsetX: src.deviceOffsetX,
+        deviceOffsetY: src.deviceOffsetY,
+        deviceRotation: src.deviceRotation,
+        hasShadow: src.hasShadow,
+        textOffsetX: src.textOffsetX,
+        textOffsetY: src.textOffsetY,
+        subtitleOffsetX: src.subtitleOffsetX,
+        subtitleOffsetY: src.subtitleOffsetY,
+        devices: styledDevices,
+      );
+    }
+    _scheduleAutoSave();
+    notifyListeners();
   }
 
   // --- Active screen mutators ---
@@ -631,8 +915,8 @@ class EditorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Switches the store shown in the preview for every screen. Nothing else
-  /// changes: the design is shared and realistic frames resolve per store.
+  /// Switches the active store for every screen. Nothing else changes: the
+  /// design is shared and realistic frames resolve per store.
   void setPlatform(TargetPlatformType newPlatform) {
     if (_screenshots.every((s) => s.platform == newPlatform)) return;
     _screenshots = _screenshots.map((s) => s.copyWith(platform: newPlatform)).toList();

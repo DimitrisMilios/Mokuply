@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/store_specs.dart';
 import '../../../models/canvas_text_item.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/color_swatch_button.dart';
@@ -30,6 +31,12 @@ class _TextInspectorState extends State<TextInspector> {
   };
 
   late final TextEditingController _controller;
+  final FocusNode _textFocus = FocusNode(debugLabel: 'inspector-text');
+
+  /// Last focus request any text inspector handled. Static, so a request
+  /// that also mounted this inspector (double-click on an unselected text)
+  /// is still seen as new.
+  static int _handledFocusRequest = 0;
 
   @override
   void initState() {
@@ -40,6 +47,7 @@ class _TextInspectorState extends State<TextInspector> {
   @override
   void dispose() {
     _controller.dispose();
+    _textFocus.dispose();
     super.dispose();
   }
 
@@ -49,6 +57,16 @@ class _TextInspectorState extends State<TextInspector> {
     final target = _TextTarget.resolve(vm, widget.elementId);
     if (target == null) {
       return const Text('This text element no longer exists.', style: TextStyle(color: AppColors.textMuted));
+    }
+
+    // Double-clicking a text on the canvas asks us to focus the field.
+    if (vm.textFocusRequest > _handledFocusRequest) {
+      _handledFocusRequest = vm.textFocusRequest;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _textFocus.requestFocus();
+        _controller.selection = TextSelection(baseOffset: 0, extentOffset: _controller.text.length);
+      });
     }
 
     // Keep the field in sync when selection changes, without fighting the caret while typing.
@@ -64,10 +82,15 @@ class _TextInspectorState extends State<TextInspector> {
       children: [
         TextField(
           controller: _controller,
+          focusNode: _textFocus,
           onChanged: target.setText,
           maxLines: 3,
           minLines: 1,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontMd, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: AppDimensions.fontMd,
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             labelText: 'Text',
             hintText: target.isHeadline ? 'Leave empty to hide' : null,
@@ -100,9 +123,12 @@ class _TextInspectorState extends State<TextInspector> {
           ),
         ],
         const SizedBox(height: 16),
-        const Text(
-          'Drag the text on the canvas to move it. Position is shared by both stores.',
-          style: TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.3),
+        Text(
+          target.supportsRotation
+              ? 'On the canvas: drag to move, corner handles to resize, the top handle to rotate. '
+                    'Double-click the text to edit it here.'
+              : 'On the canvas: drag to move, corner handles to resize. Double-click the text to edit it here.',
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.3),
         ),
         const SizedBox(height: 14),
         OutlinedButton.icon(
@@ -229,8 +255,8 @@ class _TextTarget {
       return _TextTarget(
         isHeadline: true,
         supportsRotation: false,
-        minSize: 40,
-        maxSize: 280,
+        minSize: TextSizeLimits.titleMin,
+        maxSize: TextSizeLimits.titleMax,
         text: vm.titleText,
         font: vm.titleFont,
         fontSize: vm.titleSize,
@@ -252,8 +278,8 @@ class _TextTarget {
       return _TextTarget(
         isHeadline: true,
         supportsRotation: false,
-        minSize: 20,
-        maxSize: 160,
+        minSize: TextSizeLimits.subtitleMin,
+        maxSize: TextSizeLimits.subtitleMax,
         text: vm.subtitleText,
         font: vm.subtitleFont,
         fontSize: vm.subtitleSize,
@@ -279,8 +305,8 @@ class _TextTarget {
     return _TextTarget(
       isHeadline: false,
       supportsRotation: true,
-      minSize: 16,
-      maxSize: 200,
+      minSize: TextSizeLimits.customMin,
+      maxSize: TextSizeLimits.customMax,
       text: item.text,
       font: item.font,
       fontSize: item.fontSize,

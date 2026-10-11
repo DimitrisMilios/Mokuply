@@ -10,6 +10,14 @@ Design high-resolution App Store and Google Play screenshots in your browser.
 - Starter templates, custom templates saved in your browser, and `.mokuply` template files you can share.
 - Exports lossless PNG bundles for either store or both at once.
 
+## Working on the canvas
+
+- Screens sit side by side as one store strip, with a named tab above each one. Double-click a tab to rename it; its menu duplicates, reorders, deletes, or applies that screen's style to all screens.
+- Both stores render as live rows (App Store on top, Google Play below). Click a row to make it the active store for uploads, or switch to a single row from the rail.
+- Drag anything to move it. Elements snap to the horizontal centre and their anchor line. Corner handles resize, the top handle rotates, double-click a text to edit it, right-click for duplicate/reset/delete.
+- Shortcuts: arrows nudge (Shift ×10), Delete removes, Esc deselects or leaves preview, Ctrl+D duplicates, `+`/`-` zoom, `0` fits the strip, `1` is 100%.
+- The font picker previews only the fonts you scroll past slowly, so opening it does not download the whole Google Fonts catalogue.
+
 ## Run locally
 
 Requires Flutter 3.41 or newer.

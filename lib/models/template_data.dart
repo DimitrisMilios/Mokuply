@@ -13,6 +13,9 @@ import 'canvas_text_item.dart';
 @immutable
 class TemplateData {
   final TargetPlatformType platform;
+
+  /// Optional user-given name shown on the screen tab above the canvas.
+  final String name;
   final LayoutMode layoutMode;
   final DeviceFrameStyle frameStyle;
   final String titleText;
@@ -51,6 +54,7 @@ class TemplateData {
 
   const TemplateData({
     this.platform = TargetPlatformType.appStore,
+    this.name = '',
     this.layoutMode = LayoutMode.titleTopDeviceBottom,
     this.frameStyle = DeviceFrameStyle.realistic,
     this.titleText = 'Build Stunning Apps',
@@ -102,6 +106,7 @@ class TemplateData {
 
   TemplateData copyWith({
     TargetPlatformType? platform,
+    String? name,
     LayoutMode? layoutMode,
     DeviceFrameStyle? frameStyle,
     String? titleText,
@@ -135,6 +140,7 @@ class TemplateData {
   }) {
     return TemplateData(
       platform: platform ?? this.platform,
+      name: name ?? this.name,
       layoutMode: layoutMode ?? this.layoutMode,
       frameStyle: frameStyle ?? this.frameStyle,
       titleText: titleText ?? this.titleText,
@@ -172,6 +178,7 @@ class TemplateData {
   Map<String, dynamic> toJson() {
     return {
       'platform': platform.name,
+      'name': name,
       'layoutMode': layoutMode.name,
       'frameStyle': frameStyle.name,
       'titleText': titleText,
@@ -218,6 +225,7 @@ class TemplateData {
         (e) => e.name == json['platform'],
         orElse: () => TargetPlatformType.appStore,
       ),
+      name: json['name'] as String? ?? '',
       layoutMode: LayoutMode.values.firstWhere(
         (e) => e.name == json['layoutMode'],
         orElse: () => LayoutMode.titleTopDeviceBottom,

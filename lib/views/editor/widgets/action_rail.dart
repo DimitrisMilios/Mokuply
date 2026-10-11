@@ -77,12 +77,16 @@ class ActionRail extends StatelessWidget {
               active: nothingSelected && vm.screenSection == ScreenInspectorSection.background,
               onTap: () => vm.showScreenSection(ScreenInspectorSection.background),
             ),
+            const _RailDivider(),
+            _RailSectionLabel('View'),
             _RailButton(
-              icon: Icons.layers_rounded,
-              label: 'Layers',
-              tooltip: 'Everything on this screen',
-              active: nothingSelected && vm.screenSection == ScreenInspectorSection.layers,
-              onTap: () => vm.showScreenSection(ScreenInspectorSection.layers),
+              icon: vm.showBothStores ? Icons.view_agenda_rounded : Icons.crop_portrait_rounded,
+              label: vm.showBothStores ? 'Both' : 'One',
+              tooltip: vm.showBothStores
+                  ? 'Showing both stores as rows. Click to show only the active store.'
+                  : 'Showing the ${vm.platform.shortName} only. Click to show both stores.',
+              active: vm.showBothStores,
+              onTap: () => vm.setShowBothStores(!vm.showBothStores),
             ),
             const _RailDivider(),
             _RailButton(

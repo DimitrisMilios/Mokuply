@@ -93,18 +93,18 @@ class EditorNavbar extends StatelessWidget {
               ],
               const Spacer(),
 
-              // Preview store switch
+              // Active store switch
               Tooltip(
-                message: 'Switch which store the canvas previews.\n'
-                    'Your design is shared, so both stores are always exported.',
+                message: 'Active store: uploads and single-store downloads target it.\n'
+                    'Both stores are shown as rows on the canvas and always exported.',
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (wide) ...[
-                      const Icon(Icons.visibility_outlined, size: 16, color: AppColors.textMuted),
+                      const Icon(Icons.storefront_outlined, size: 16, color: AppColors.textMuted),
                       const SizedBox(width: 6),
                       const Text(
-                        'Preview',
+                        'Active store',
                         style: TextStyle(
                           color: AppColors.textMuted,
                           fontSize: AppDimensions.fontSm,
@@ -119,13 +119,13 @@ class EditorNavbar extends StatelessWidget {
                           value: TargetPlatformType.appStore,
                           label: medium ? Text(wide ? 'App Store · ${TargetPlatformType.appStore.dimensionsLabel}' : 'App Store') : null,
                           icon: const Icon(Icons.apple, size: 18),
-                          tooltip: 'Preview the App Store (${TargetPlatformType.appStore.dimensionsLabel})',
+                          tooltip: 'App Store (${TargetPlatformType.appStore.dimensionsLabel})',
                         ),
                         ButtonSegment(
                           value: TargetPlatformType.googlePlay,
                           label: medium ? Text(wide ? 'Google Play · ${TargetPlatformType.googlePlay.dimensionsLabel}' : 'Google Play') : null,
                           icon: const Icon(Icons.android, size: 18),
-                          tooltip: 'Preview Google Play (${TargetPlatformType.googlePlay.dimensionsLabel})',
+                          tooltip: 'Google Play (${TargetPlatformType.googlePlay.dimensionsLabel})',
                         ),
                       ],
                       selected: {vm.platform},

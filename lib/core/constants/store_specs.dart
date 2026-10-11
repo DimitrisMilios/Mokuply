@@ -189,10 +189,53 @@ class StoreSpecs {
   static const List<String> popularFonts = [
     'Inter',
     'Outfit',
-    'Roboto',
     'Poppins',
     'Montserrat',
-    'Playfair Display',
+    'DM Sans',
+    'Manrope',
+    'Plus Jakarta Sans',
     'Space Grotesk',
+    'Sora',
+    'Urbanist',
+    'Roboto',
+    'Open Sans',
+    'Lato',
+    'Nunito',
+    'Rubik',
+    'Figtree',
+    'Playfair Display',
+    'Fraunces',
+    'Lora',
+    'Bebas Neue',
+    'Oswald',
+    'Anton',
+    'Pacifico',
+    'Caveat',
+    'JetBrains Mono',
+    'Space Mono',
   ];
+}
+
+/// Scale limits for phone frames and images, shared by the inspector sliders
+/// and the corner resize handles on the canvas.
+class ScaleLimits {
+  ScaleLimits._();
+
+  static const double deviceMin = 0.3;
+  static const double deviceMax = 1.6;
+  static const double imageMin = 0.2;
+  static const double imageMax = 2.5;
+}
+
+/// Font size limits in export pixels, shared by the inspector sliders and the
+/// corner resize handles on the canvas.
+class TextSizeLimits {
+  TextSizeLimits._();
+
+  static const double titleMin = 40;
+  static const double titleMax = 280;
+  static const double subtitleMin = 20;
+  static const double subtitleMax = 160;
+  static const double customMin = 16;
+  static const double customMax = 200;
 }

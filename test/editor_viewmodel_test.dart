@@ -9,6 +9,7 @@ import 'package:mocuply/viewmodels/editor_viewmodel.dart';
 import 'package:mocuply/widgets/canvas/device_frame_widget.dart';
 
 void main() {
+  _canvasUxTests();
   group('EditorViewModel elements', () {
     late EditorViewModel vm;
 
@@ -358,6 +359,181 @@ void main() {
         hasShadow: false,
       );
       expect(CanvasDeviceItem.fromJson(item.toJson()), equals(item));
+    });
+  });
+}
+
+void _canvasUxTests() {
+  group('Canvas UX: screens strip', () {
+    late EditorViewModel vm;
+
+    setUp(() {
+      vm = EditorViewModel();
+    });
+
+    test('both stores are shown as rows by default and can be collapsed to the active one', () {
+      expect(vm.showBothStores, isTrue);
+      expect(vm.visibleStores, [TargetPlatformType.appStore, TargetPlatformType.googlePlay]);
+      vm.setPlatform(TargetPlatformType.googlePlay);
+      vm.setShowBothStores(false);
+      expect(vm.visibleStores, [TargetPlatformType.googlePlay]);
+    });
+
+    test('screens can be named, and unnamed screens fall back to their number', () {
+      expect(vm.screenNameAt(0), 'Screen 1');
+      vm.setScreenName(0, '  Onboarding  ');
+      expect(vm.screenNameAt(0), 'Onboarding');
+      expect(vm.data.name, 'Onboarding');
+      final reloaded = TemplateData.fromJson(vm.data.toJson());
+      expect(reloaded.name, 'Onboarding');
+    });
+
+    test('moveScreenshot reorders and keeps the moved screen selected', () {
+      final n = vm.screenshotsCount;
+      vm.setScreenName(0, 'A');
+      vm.setScreenName(1, 'B');
+      vm.setScreenName(n - 1, 'C');
+
+      vm.moveScreenshot(n - 1, 0);
+      expect(vm.screenshots.take(3).map((s) => s.name).toList(), ['C', 'A', 'B']);
+      expect(vm.selectedIndex, 0);
+
+      vm.moveScreenshot(0, n + 5); // out of range: ignored
+      expect(vm.screenshots.first.name, 'C');
+    });
+
+    test('addScreenshot inherits the look of the active screen but not its content', () {
+      vm.setCustomBackgroundColor(const Color(0xFF123456));
+      vm.setTitleFont('Sora');
+      vm.setTitleText('Hello');
+      final devId = vm.selectedDevice!.id;
+      vm.setDeviceScreenshot(devId, TargetPlatformType.appStore, Uint8List.fromList([1, 2, 3]));
+
+      vm.addScreenshot();
+      final added = vm.data;
+      expect(added.customBackgroundColor, const Color(0xFF123456));
+      expect(added.titleFont, 'Sora');
+      expect(added.titleText, isNot('Hello'));
+      expect(added.effectiveDevices.any((d) => d.hasAnyScreenshot), isFalse);
+      expect(added.effectiveDevices.any((d) => d.id == devId), isFalse);
+    });
+
+    test('applyStyleToAllScreens copies the look and keeps each screen\'s words and screenshots', () {
+      vm.selectScreenshot(0);
+      vm.setTitleText('First');
+      vm.selectScreenshot(1);
+      vm.setTitleText('Second');
+      final secondDev = vm.selectedDevice!.id;
+      final shot = Uint8List.fromList([9, 9]);
+      vm.setDeviceScreenshot(secondDev, TargetPlatformType.googlePlay, shot);
+
+      vm.selectScreenshot(0);
+      vm.setTitleFont('Fraunces');
+      vm.setTitleSize(150);
+      vm.setLayoutMode(LayoutMode.angledLeftHero);
+      vm.setGradientIndex(3);
+      vm.setDeviceFrameStyle(vm.selectedDevice!.id, DeviceFrameStyle.minimalOutline);
+
+      vm.applyStyleToAllScreens(0);
+
+      final second = vm.screenshots[1];
+      expect(second.titleText, 'Second');
+      expect(second.titleFont, 'Fraunces');
+      expect(second.titleSize, 150);
+      expect(second.layoutMode, LayoutMode.angledLeftHero);
+      expect(second.selectedGradientIndex, 3);
+      expect(second.effectiveDevices.first.frameStyle, DeviceFrameStyle.minimalOutline);
+      expect(second.effectiveDevices.first.rotation, -15.0);
+      expect(second.effectiveDevices.first.screenshotFor(TargetPlatformType.googlePlay), same(shot));
+    });
+  });
+
+  group('Canvas UX: element handles and shortcuts', () {
+    late EditorViewModel vm;
+
+    setUp(() {
+      vm = EditorViewModel();
+    });
+
+    test('resizeElement scales frames and images and sizes text, within limits', () {
+      final devId = vm.selectedDevice!.id;
+      vm.resizeElement(0, devId, 1.2);
+      expect(vm.selectedDevice!.scale, 1.2);
+      vm.resizeElement(0, devId, 99);
+      expect(vm.selectedDevice!.scale, ScaleLimits.deviceMax);
+
+      vm.resizeElement(0, 'title', 120);
+      expect(vm.titleSize, 120);
+      vm.resizeElement(0, 'title', 1);
+      expect(vm.titleSize, TextSizeLimits.titleMin);
+
+      vm.addCustomTextElement();
+      vm.resizeElement(0, vm.selectedTextId!, 64);
+      expect(vm.customTextItems.single.fontSize, 64);
+
+      vm.addCustomImageItem(Uint8List.fromList([1]));
+      vm.resizeElement(0, vm.selectedImageId!, 0.01);
+      expect(vm.selectedCustomImage!.scale, ScaleLimits.imageMin);
+    });
+
+    test('rotateElement normalises to -180..180 and ignores the headline', () {
+      final devId = vm.selectedDevice!.id;
+      vm.rotateElement(0, devId, 200);
+      expect(vm.selectedDevice!.rotation, -160);
+      vm.rotateElement(0, devId, -190);
+      expect(vm.selectedDevice!.rotation, 170);
+      vm.rotateElement(0, 'title', 45);
+      expect(vm.selectedDevice!.rotation, 170);
+    });
+
+    test('nudgeSelected moves the selection by offset units', () {
+      vm.selectElement('title');
+      final start = vm.elementOffset('title')!;
+      vm.nudgeSelected(3, -2);
+      vm.nudgeSelected(1, 0);
+      expect(vm.data.textOffsetX, start.dx + 4);
+      expect(vm.data.textOffsetY, start.dy - 2);
+      expect(vm.elementOffset('title'), start + const Offset(4, -2));
+    });
+
+    test('removeSelectedElement clears headlines, deletes extras and keeps the last frame', () {
+      vm.selectElement('title');
+      vm.removeSelectedElement();
+      expect(vm.titleText, isEmpty);
+      expect(vm.selectedElementId, isNull);
+
+      vm.addCustomTextElement();
+      vm.removeSelectedElement();
+      expect(vm.customTextItems, isEmpty);
+
+      vm.selectElement(vm.selectedDevice!.id);
+      vm.removeSelectedElement();
+      expect(vm.devices.length, 1);
+    });
+
+    test('duplicateElement copies frames, images and text next to the original', () {
+      final devId = vm.selectedDevice!.id;
+      final devCount = vm.devices.length;
+      final devOffsetX = vm.selectedDevice!.offsetX;
+      vm.duplicateElement(devId);
+      expect(vm.devices.length, devCount + 1);
+      expect(vm.selectedDeviceId, isNot(devId));
+      expect(vm.devices.last.offsetX, devOffsetX + 40);
+
+      vm.addCustomTextElement();
+      final txtId = vm.selectedTextId!;
+      vm.duplicateElement(txtId);
+      expect(vm.customTextItems.length, 2);
+      expect(vm.customTextItems.last.text, vm.customTextItems.first.text);
+
+      vm.duplicateElement('title'); // headline is unique: no-op
+      expect(vm.selectedElementId, vm.customTextItems.last.id);
+    });
+
+    test('requestTextFocus bumps a counter the inspector listens to', () {
+      final before = vm.textFocusRequest;
+      vm.requestTextFocus();
+      expect(vm.textFocusRequest, before + 1);
     });
   });
 }

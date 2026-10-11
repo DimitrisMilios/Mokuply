@@ -37,6 +37,9 @@ class AppColors {
   // Badges
   static const Color badgeBg = Color(0x1F1A4731);
 
+  // Canvas chrome
+  static const Color snapGuide = Color(0xFFE11D74); // Magenta guide line while dragging
+
   // Text High-Contrast Colors
   static const Color textPrimary = Color(0xFF1A4731);
   static const Color textSecondary = Color(0xFF2D6A4F);

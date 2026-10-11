@@ -65,9 +65,9 @@ class FrameInspector extends StatelessWidget {
         LabeledSlider(
           label: 'Scale',
           valueText: '${(device.scale * 100).toInt()}%',
-          value: device.scale.clamp(0.3, 1.6),
-          min: 0.3,
-          max: 1.6,
+          value: device.scale.clamp(ScaleLimits.deviceMin, ScaleLimits.deviceMax),
+          min: ScaleLimits.deviceMin,
+          max: ScaleLimits.deviceMax,
           onChanged: (v) => vm.setDeviceFrameScale(device.id, v),
         ),
         const SizedBox(height: 8),
@@ -94,7 +94,7 @@ class FrameInspector extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Drag the phone on the canvas to move it.',
+          'On the canvas: drag to move, corner handles to resize, the top handle to rotate.',
           style: TextStyle(color: AppColors.textMuted, fontSize: 11),
         ),
 

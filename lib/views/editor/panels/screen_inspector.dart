@@ -7,7 +7,7 @@ import '../../../viewmodels/editor_viewmodel.dart';
 import 'background_panel.dart';
 
 /// Shown when nothing on the canvas is selected: layout presets, background,
-/// a layers list to pick elements, and screen-level actions.
+/// and screen-level actions. (Layers are listed above, in the inspector.)
 class ScreenInspector extends StatelessWidget {
   const ScreenInspector({super.key});
 
@@ -55,11 +55,6 @@ class ScreenInspector extends StatelessWidget {
               label: Text('Backdrop'),
               icon: Icon(Icons.palette_rounded, size: 14),
             ),
-            ButtonSegment(
-              value: ScreenInspectorSection.layers,
-              label: Text('Layers'),
-              icon: Icon(Icons.layers_rounded, size: 14),
-            ),
           ],
           selected: {vm.screenSection},
           showSelectedIcon: false,
@@ -81,7 +76,6 @@ class ScreenInspector extends StatelessWidget {
         switch (vm.screenSection) {
           ScreenInspectorSection.layout => _LayoutSection(vm: vm),
           ScreenInspectorSection.background => const BackgroundSection(),
-          ScreenInspectorSection.layers => _LayersSection(vm: vm),
         },
       ],
     );
@@ -150,131 +144,3 @@ class _LayoutSection extends StatelessWidget {
   }
 }
 
-class _LayersSection extends StatelessWidget {
-  final EditorViewModel vm;
-  const _LayersSection({required this.vm});
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = <Widget>[
-      _LayerRow(
-        icon: Icons.title_rounded,
-        name: 'Headline',
-        detail: vm.titleText.isEmpty ? 'Empty — tap to add' : vm.titleText,
-        muted: vm.titleText.isEmpty,
-        onTap: () => vm.selectElement('title'),
-      ),
-      _LayerRow(
-        icon: Icons.notes_rounded,
-        name: 'Subtitle',
-        detail: vm.subtitleText.isEmpty ? 'Empty — tap to add' : vm.subtitleText,
-        muted: vm.subtitleText.isEmpty,
-        onTap: () => vm.selectElement('subtitle'),
-      ),
-      for (final (i, d) in vm.devices.indexed)
-        _LayerRow(
-          icon: Icons.smartphone_rounded,
-          name: 'Phone frame #${i + 1}',
-          detail: d.hasAnyScreenshot ? d.frameStyle.labelFor(vm.platform) : 'No screenshot yet',
-          muted: !d.hasAnyScreenshot,
-          onTap: () => vm.selectElement(d.id),
-        ),
-      for (final (i, img) in vm.customImageItems.indexed)
-        _LayerRow(
-          icon: Icons.image_rounded,
-          name: 'Image #${i + 1}',
-          detail: '${(img.scale * 100).toInt()}% · ${img.rotation.toInt()}°',
-          onTap: () => vm.selectElement(img.id),
-          thumbnail: img.imageBytes,
-        ),
-      for (final (i, t) in vm.customTextItems.indexed)
-        _LayerRow(
-          icon: Icons.text_fields_rounded,
-          name: 'Text #${i + 1}',
-          detail: t.text,
-          onTap: () => vm.selectElement(t.id),
-        ),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Tap an item to edit it. You can also click it directly on the canvas.',
-          style: TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.3),
-        ),
-        const SizedBox(height: 8),
-        ...rows,
-      ],
-    );
-  }
-}
-
-class _LayerRow extends StatelessWidget {
-  final IconData icon;
-  final String name;
-  final String detail;
-  final bool muted;
-  final VoidCallback onTap;
-  final dynamic thumbnail;
-
-  const _LayerRow({
-    required this.icon,
-    required this.name,
-    required this.detail,
-    this.muted = false,
-    required this.onTap,
-    this.thumbnail,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          border: Border.all(color: AppColors.glassBorder),
-        ),
-        child: Row(
-          children: [
-            if (thumbnail != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: SizedBox(width: 24, height: 24, child: Image.memory(thumbnail, fit: BoxFit.cover)),
-              )
-            else
-              Icon(icon, size: 20, color: muted ? AppColors.textMuted : AppColors.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    detail,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 10,
-                      fontStyle: muted ? FontStyle.italic : FontStyle.normal,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textMuted),
-          ],
-        ),
-      ),
-    );
-  }
-}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/store_specs.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/labeled_slider.dart';
 
@@ -34,9 +35,9 @@ class ImageInspector extends StatelessWidget {
         LabeledSlider(
           label: 'Scale',
           valueText: '${(image.scale * 100).toInt()}%',
-          value: image.scale.clamp(0.2, 2.5),
-          min: 0.2,
-          max: 2.5,
+          value: image.scale.clamp(ScaleLimits.imageMin, ScaleLimits.imageMax),
+          min: ScaleLimits.imageMin,
+          max: ScaleLimits.imageMax,
           onChanged: (v) => vm.setCustomImageScale(image.id, v),
         ),
         const SizedBox(height: 8),
@@ -71,7 +72,7 @@ class ImageInspector extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Drag the image on the canvas to move it.',
+          'On the canvas: drag to move, corner handles to resize, the top handle to rotate.',
           style: TextStyle(color: AppColors.textMuted, fontSize: 11),
         ),
         const SizedBox(height: 14),
