@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_dimensions.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/glass_container.dart';
 
-/// Hero section for HomeView with title, badge, and middle CTA card ("Do you want to start a project?").
+/// Hero section for HomeView with title and middle CTA card ("Do you want to start a project?").
 class HeroSection extends StatelessWidget {
   const HeroSection({super.key});
 
@@ -13,31 +12,6 @@ class HeroSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 16),
-              SizedBox(width: 8),
-              Text(
-                'MOKUPLY STUDIO • APPS STORE & GOOGLE PLAY MOCKUP CREATOR',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: AppDimensions.fontSm,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
         const SizedBox(height: 20),
         const Text(
           'Create Store Screenshots\nin Seconds',

@@ -62,33 +62,56 @@ class MultiCanvasWorkspace extends StatelessWidget {
                       onPointerDown: (_) {
                         if (!isSelected) vm.selectScreenshot(index);
                       },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        // 2px per side = 4px between neighbouring screens, so the strip
-                        // reads as one continuous store listing.
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-                          border: Border.all(
-                            color: isSelected ? AppColors.primary : Colors.transparent,
-                            width: isSelected ? 4 : 0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isSelected
-                                  ? AppColors.primary.withValues(alpha: 0.45)
-                                  : AppColors.primary.withValues(alpha: 0.12),
-                              blurRadius: isSelected ? 36 : 20,
-                              spreadRadius: isSelected ? 4 : 0,
-                              offset: const Offset(0, 12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Labels live above the frame so they never cover the
+                          // artwork or get in the way while editing.
+                          SizedBox(
+                            width: previewWidth,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _CanvasChip(
+                                  label: 'Screen ${index + 1}',
+                                  highlighted: isSelected,
+                                ),
+                                _CanvasChip(
+                                  icon: itemData.platform == TargetPlatformType.appStore
+                                      ? Icons.apple
+                                      : Icons.android,
+                                  label: itemData.platform.dimensionsLabel,
+                                  tabular: true,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Stack(
-                          children: [
+                          ),
+                          const SizedBox(height: 10),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            // 2px per side = 4px between neighbouring screens, so the strip
+                            // reads as one continuous store listing.
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+                              border: Border.all(
+                                color: isSelected ? AppColors.primary : Colors.transparent,
+                                width: isSelected ? 4 : 0,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isSelected
+                                      ? AppColors.primary.withValues(alpha: 0.45)
+                                      : AppColors.primary.withValues(alpha: 0.12),
+                                  blurRadius: isSelected ? 36 : 20,
+                                  spreadRadius: isSelected ? 4 : 0,
+                                  offset: const Offset(0, 12),
+                                ),
+                              ],
+                            ),
                             // Each screen repaints on its own, so dragging on one
                             // card never re-rasterises the others.
-                            RepaintBoundary(
+                            child: RepaintBoundary(
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(AppDimensions.radiusLg - 2),
                                 child: CanvasMockupWidget(
@@ -98,73 +121,62 @@ class MultiCanvasWorkspace extends StatelessWidget {
                                 ),
                               ),
                             ),
-
-                            // Store / dimensions badge (top-right)
-                            Positioned(
-                              top: 14,
-                              right: 14,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.55),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      itemData.platform == TargetPlatformType.appStore ? Icons.apple : Icons.android,
-                                      size: 11,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      itemData.platform.dimensionsLabel,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        fontFeatures: [FontFeature.tabularFigures()],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            // Screen Index Badge Overlay
-                            Positioned(
-                              top: 14,
-                              left: 14,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : Colors.black.withValues(alpha: 0.65),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Screen #${index + 1}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     );
                   }),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small pill shown above a canvas card (screen number, store dimensions).
+class _CanvasChip extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final bool highlighted;
+  final bool tabular;
+
+  const _CanvasChip({
+    required this.label,
+    this.icon,
+    this.highlighted = false,
+    this.tabular = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color fg = highlighted ? AppColors.textOnPrimary : AppColors.textSecondary;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: highlighted ? AppColors.primary : Colors.white.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: highlighted ? AppColors.primary : AppColors.primary.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 11, color: fg),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: fg,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              fontFeatures: tabular ? const [FontFeature.tabularFigures()] : null,
             ),
           ),
         ],
