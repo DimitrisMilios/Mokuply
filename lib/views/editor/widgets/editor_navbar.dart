@@ -5,6 +5,7 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/store_specs.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/glass_container.dart';
+import '../../../widgets/shared/brand_logo.dart';
 import 'export_modal_dialog.dart';
 import 'template_builder_dialog.dart';
 
@@ -52,14 +53,7 @@ class EditorNavbar extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back_rounded, color: AppColors.primary),
               ),
               const SizedBox(width: 4),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [AppColors.primary, AppColors.secondary]),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                ),
-                child: const Icon(Icons.art_track_rounded, color: AppColors.textOnPrimary, size: 20),
-              ),
+              const BrandLogo(size: 36, radius: AppDimensions.radiusMd),
               if (showBrand) ...[
                 const SizedBox(width: AppDimensions.spacingMd),
                 const Text(

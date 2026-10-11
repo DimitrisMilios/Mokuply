@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
 import '../../../widgets/shared/glass_container.dart';
+import '../../../widgets/shared/brand_logo.dart';
 
 /// Floating sticky top header navigation bar for HomeView.
 class HomeNavbar extends StatelessWidget {
@@ -32,21 +33,7 @@ class HomeNavbar extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [AppColors.primary, AppColors.secondary]),
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.art_track_rounded, color: AppColors.textOnPrimary, size: 22),
-                    ),
+                    const BrandLogo(size: 42, radius: AppDimensions.radiusMd, shadow: true),
                     const SizedBox(width: AppDimensions.spacingMd),
                     const Text(
                       'Mocuply',
