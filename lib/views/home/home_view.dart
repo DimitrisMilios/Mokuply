@@ -150,13 +150,10 @@ class _TemplateStoreGrid extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          runSpacing: 12,
-          spacing: 12,
-          children: [
-            Column(
+        LayoutBuilder(
+          builder: (ctx, constraints) {
+            final bool wide = constraints.maxWidth >= 760;
+            final Widget title = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: const [
@@ -175,27 +172,12 @@ class _TemplateStoreGrid extends StatelessWidget {
                   style: TextStyle(color: AppColors.textMuted, fontSize: 14, fontWeight: FontWeight.w500),
                 ),
               ],
-            ),
-            Wrap(
+            );
+            final Widget actions = Wrap(
               spacing: 12,
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                OutlinedButton.icon(
-                  onPressed: () => _handleImportTemplate(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary, width: 1.5),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
-                  ),
-                  icon: const Icon(Icons.file_upload_outlined, size: 18),
-                  label: const Text(
-                    'Import .mokuply Template',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
@@ -204,6 +186,7 @@ class _TemplateStoreGrid extends StatelessWidget {
                     border: Border.all(color: AppColors.glassBorder),
                   ),
                   child: const Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.storefront_rounded, size: 18, color: AppColors.primary),
                       SizedBox(width: 8),
@@ -214,9 +197,37 @@ class _TemplateStoreGrid extends StatelessWidget {
                     ],
                   ),
                 ),
+                OutlinedButton.icon(
+                  onPressed: () => _handleImportTemplate(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
+                  ),
+                  icon: const Icon(Icons.file_upload_outlined, size: 18),
+                  label: const Text(
+                    'Import .mokuply Template',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
               ],
-            ),
-          ],
+            );
+            if (wide) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(child: title),
+                  const SizedBox(width: 24),
+                  actions,
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [title, const SizedBox(height: 16), actions],
+            );
+          },
         ),
         const SizedBox(height: 24),
         LayoutBuilder(
