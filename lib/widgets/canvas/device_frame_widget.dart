@@ -17,6 +17,11 @@ class DeviceFrameWidget extends StatelessWidget {
   final TargetPlatformType platform;
   final double scale;
 
+  /// Pixel width to decode the screenshot at. Previews pass a size close to
+  /// what is drawn so large screenshots don't cost full-resolution memory;
+  /// exports leave it null to decode at native resolution.
+  final int? decodeWidth;
+
   const DeviceFrameWidget({
     super.key,
     required this.frameStyle,
@@ -24,6 +29,7 @@ class DeviceFrameWidget extends StatelessWidget {
     required this.hasShadow,
     required this.platform,
     required this.scale,
+    this.decodeWidth,
   });
 
   /// Phone body width in design pixels (before [scale]).
@@ -50,7 +56,9 @@ class DeviceFrameWidget extends StatelessWidget {
             fit: BoxFit.cover,
             width: deviceWidth,
             height: deviceHeight,
+            cacheWidth: decodeWidth,
             gaplessPlayback: true,
+            filterQuality: FilterQuality.medium,
           )
         : _ScreenshotPlaceholder(
             width: deviceWidth,

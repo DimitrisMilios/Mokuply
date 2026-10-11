@@ -86,12 +86,16 @@ class MultiCanvasWorkspace extends StatelessWidget {
                         ),
                         child: Stack(
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(AppDimensions.radiusLg - 2),
-                              child: CanvasMockupWidget(
-                                data: itemData,
-                                itemIndex: index,
-                                canvasSize: Size(previewWidth, previewHeight),
+                            // Each screen repaints on its own, so dragging on one
+                            // card never re-rasterises the others.
+                            RepaintBoundary(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(AppDimensions.radiusLg - 2),
+                                child: CanvasMockupWidget(
+                                  data: itemData,
+                                  itemIndex: index,
+                                  canvasSize: Size(previewWidth, previewHeight),
+                                ),
                               ),
                             ),
 

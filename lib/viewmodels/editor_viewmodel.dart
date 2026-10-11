@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -496,11 +497,26 @@ class EditorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Timer? _autoSaveTimer;
+  static const Duration _autoSaveDelay = Duration(milliseconds: 700);
+
+  /// Debounced: slider drags and typing fire dozens of changes per second, so
+  /// the draft is serialised once, shortly after the last change.
   void _scheduleAutoSave() {
     _isAutoSaving = true;
-    StorageService.saveActiveDraft(_screenshots).then((_) {
-      _isAutoSaving = false;
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(_autoSaveDelay, () {
+      _autoSaveTimer = null;
+      StorageService.saveActiveDraft(_screenshots).then((_) {
+        _isAutoSaving = false;
+      });
     });
+  }
+
+  @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
   }
 
   ProjectTemplate _buildTemplate({

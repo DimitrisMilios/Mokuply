@@ -102,3 +102,18 @@ coverage/
 !**/ios/**/default.mode2v3
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
+# === Local AI / agent tooling (never publish) ===
+.claude/
+.claude-flow/
+.swarm/
+.agents/
+.hive-mind/
+memory/
+CLAUDE.md
+claude-flow*
+
+# === Firebase ===
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log

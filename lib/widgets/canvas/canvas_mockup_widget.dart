@@ -58,6 +58,9 @@ class CanvasMockupWidget extends StatelessWidget {
     final geometry = CanvasGeometry(canvasSize);
     final vm = isExporting ? null : Provider.of<EditorViewModel>(context, listen: false);
     final decoration = _backgroundDecoration;
+    // Previews decode images near their drawn size (with headroom for canvas
+    // zoom); exports decode at native resolution.
+    final double? decodeFactor = isExporting ? null : MediaQuery.devicePixelRatioOf(context) * 2.0;
 
     Widget canvas = Container(
       width: canvasSize.width,
@@ -71,10 +74,12 @@ class CanvasMockupWidget extends StatelessWidget {
                 child: Image.memory(
                   data.customBackgroundImageBytes!,
                   fit: BoxFit.cover,
+                  cacheWidth: decodeFactor == null ? null : (canvasSize.width * decodeFactor).round(),
                   gaplessPlayback: true,
+                  filterQuality: FilterQuality.medium,
                 ),
               ),
-            _buildDesignLayer(vm, geometry),
+            _buildDesignLayer(vm, geometry, decodeFactor),
           ],
         ),
       ),
@@ -97,9 +102,12 @@ class CanvasMockupWidget extends StatelessWidget {
     return canvas;
   }
 
-  Widget _buildDesignLayer(EditorViewModel? vm, CanvasGeometry geometry) {
+  Widget _buildDesignLayer(EditorViewModel? vm, CanvasGeometry geometry, double? decodeFactor) {
     final anchors = _LayoutAnchors.forMode(data.layoutMode);
     final platform = data.platform;
+    final double customImageWidth = DesignSpace.width * DesignSpace.customImageWidthFraction * geometry.scale;
+    int? decodeWidthFor(double drawnWidth, double elementScale) =>
+        decodeFactor == null ? null : (drawnWidth * elementScale * decodeFactor).round();
 
     void select(String id) {
       if (vm == null) return;
@@ -135,6 +143,7 @@ class CanvasMockupWidget extends StatelessWidget {
               hasShadow: device.hasShadow,
               platform: platform,
               scale: geometry.scale,
+              decodeWidth: decodeWidthFor(DeviceFrameWidget.bodyWidthFor(geometry.scale), device.scale),
             ),
           ),
 
@@ -172,8 +181,14 @@ class CanvasMockupWidget extends StatelessWidget {
                 opacity: image.opacity,
                 child: SizedBox(
                   // Width fixed in design space; height follows the image aspect ratio.
-                  width: DesignSpace.width * DesignSpace.customImageWidthFraction * geometry.scale,
-                  child: Image.memory(image.imageBytes, fit: BoxFit.contain, gaplessPlayback: true),
+                  width: customImageWidth,
+                  child: Image.memory(
+                    image.imageBytes,
+                    fit: BoxFit.contain,
+                    cacheWidth: decodeWidthFor(customImageWidth, image.scale),
+                    gaplessPlayback: true,
+                    filterQuality: FilterQuality.medium,
+                  ),
                 ),
               ),
             ),
