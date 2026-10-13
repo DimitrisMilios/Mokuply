@@ -30,15 +30,15 @@ class AmbientBackground extends StatelessWidget {
         if (grain)
           Positioned.fill(
             child: IgnorePointer(
+              // Image.opacity fades the draw itself; an Opacity widget would
+              // composite a full-screen offscreen layer on every frame.
               child: RepaintBoundary(
-                child: Opacity(
-                  opacity: 0.02,
-                  child: Image.asset(
-                    grainAsset,
-                    repeat: ImageRepeat.repeat,
-                    filterQuality: FilterQuality.none,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                  ),
+                child: Image.asset(
+                  grainAsset,
+                  repeat: ImageRepeat.repeat,
+                  opacity: const AlwaysStoppedAnimation(0.02),
+                  filterQuality: FilterQuality.none,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
                 ),
               ),
             ),

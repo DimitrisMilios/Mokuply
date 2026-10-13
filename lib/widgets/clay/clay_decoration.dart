@@ -235,9 +235,7 @@ class ClayDecoration extends Decoration {
   bool get isComplex => true;
 
   @override
-  Path getClipPath(Rect rect, TextDirection textDirection) {
-    return Path()..addRRect(_rrect(rect));
-  }
+  Path getClipPath(Rect rect, TextDirection textDirection) => Path()..addRRect(_rrect(rect));
 
   @override
   bool hitTest(Size size, Offset position, {TextDirection? textDirection}) {
@@ -278,6 +276,8 @@ class ClayDecoration extends Decoration {
       shadeOpacity, edgeOpacity, highlightColor, shadeColor, shadowColor, rippleTime, rippleAmp);
 }
 
+/// Paints with rounded-rect primitives only (never generic paths), so the
+/// GPU takes its fast analytic paths for the blurred shadows and the clip.
 class _ClayBoxPainter extends BoxPainter {
   final ClayDecoration d;
 
@@ -285,13 +285,14 @@ class _ClayBoxPainter extends BoxPainter {
 
   static const double _outerSigma = 14.0; // ~ blur 28
   static const double _edgeSigma = 4.0; // ~ blur 8
+  static const MaskFilter _outerBlur = MaskFilter.blur(BlurStyle.normal, _outerSigma);
+  static const MaskFilter _edgeBlur = MaskFilter.blur(BlurStyle.normal, _edgeSigma);
 
   @override
   void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
     final size = configuration.size;
     if (size == null || size.isEmpty) return;
-    final rect = offset & size;
-    final shape = _shapePath(rect);
+    final shape = _shape(offset & size);
 
     final press = d.pressed.clamp(0.0, 1.0);
     // 0 = raised lighting, 1 = inverted lighting.
@@ -301,69 +302,70 @@ class _ClayBoxPainter extends BoxPainter {
     if (!d.sunken && d.shadowOpacity > 0.001) {
       final lift = ui.lerpDouble(d.lift, 2.0, press)!;
       final opacity = d.shadowOpacity * (1 - 0.6 * press);
-      final shadowPaint = Paint()
-        ..color = d.shadowColor.withValues(alpha: opacity.clamp(0, 1))
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, _outerSigma);
-      canvas.drawPath(shape.shift(Offset(0, lift)), shadowPaint);
-
+      canvas.drawRRect(
+        shape.shift(Offset(0, lift)),
+        Paint()
+          ..color = d.shadowColor.withValues(alpha: opacity.clamp(0, 1))
+          ..maskFilter = _outerBlur,
+      );
       if (d.edgeOpacity > 0.001) {
-        final edgePaint = Paint()
-          ..color = d.shadowColor.withValues(alpha: (d.edgeOpacity * (1 - press)).clamp(0, 1))
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, _edgeSigma);
-        canvas.drawPath(shape.shift(Offset(0, ui.lerpDouble(4, 1, press)!)), edgePaint);
+        canvas.drawRRect(
+          shape.shift(Offset(0, ui.lerpDouble(4, 1, press)!)),
+          Paint()
+            ..color = d.shadowColor.withValues(alpha: (d.edgeOpacity * (1 - press)).clamp(0, 1))
+            ..maskFilter = _edgeBlur,
+        );
       }
     }
 
     // 2. Fill. Darkens 6 % when pressed.
     final fill = press > 0 ? Color.lerp(d.color, _darken(d.color, 0.06), press)! : d.color;
-    canvas.drawPath(shape, Paint()..color = fill);
+    canvas.drawRRect(shape, Paint()..color = fill);
 
     // 3. Inner lighting. Clip to the shape and stroke an offset copy; only the
     //    part inside the clip survives, which gives the inset shadow look.
     final depth = d.depth;
-    if (depth > 0.01 && (d.highlightOpacity > 0.001 || d.shadeOpacity > 0.001)) {
-      final offsetAmount = depth * (1 - 2 * invert); // +depth raised, -depth inverted
-      canvas.save();
-      canvas.clipPath(shape, doAntiAlias: true);
+    final bool highlight = d.highlightOpacity > 0.001;
+    final bool shade = d.shadeOpacity > 0.001;
+    if (depth <= 0.01 || (!highlight && !shade)) return;
 
-      final strokeWidth = depth * 2;
-
-      if (d.highlightOpacity > 0.001) {
-        final highlight = Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = strokeWidth
-          ..color = d.highlightColor.withValues(alpha: d.highlightOpacity.clamp(0, 1))
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, depth);
-        canvas.drawPath(shape.shift(Offset(-offsetAmount, -offsetAmount)), highlight);
-      }
-      if (d.shadeOpacity > 0.001) {
-        final shade = Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = strokeWidth
-          ..color = d.shadeColor.withValues(alpha: d.shadeOpacity.clamp(0, 1))
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, depth);
-        canvas.drawPath(shape.shift(Offset(offsetAmount, offsetAmount)), shade);
-      }
-      canvas.restore();
+    final offsetAmount = depth * (1 - 2 * invert); // +depth raised, -depth inverted
+    final blur = MaskFilter.blur(BlurStyle.normal, depth);
+    canvas.save();
+    canvas.clipRRect(shape);
+    if (highlight) {
+      canvas.drawRRect(
+        shape.shift(Offset(-offsetAmount, -offsetAmount)),
+        _stroke(depth, d.highlightColor.withValues(alpha: d.highlightOpacity.clamp(0, 1)), blur),
+      );
     }
+    if (shade) {
+      canvas.drawRRect(
+        shape.shift(Offset(offsetAmount, offsetAmount)),
+        _stroke(depth, d.shadeColor.withValues(alpha: d.shadeOpacity.clamp(0, 1)), blur),
+      );
+    }
+    canvas.restore();
   }
 
-  Path _shapePath(Rect rect) {
+  static Paint _stroke(double depth, Color color, MaskFilter blur) => Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = depth * 2
+    ..color = color
+    ..maskFilter = blur;
+
+  RRect _shape(Rect rect) {
     final r = math.min(d.radius, math.min(rect.width, rect.height) / 2);
     if (d.rippleTime <= 0 || d.rippleAmp <= 0) {
-      return Path()..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(r)));
+      return RRect.fromRectAndRadius(rect, Radius.circular(r));
     }
     // Surface ripple: nudge each corner by a damped sine, alternating sign so
     // the outline wobbles rather than scales.
     final a = rippleAt(d.rippleTime, amp: d.rippleAmp);
     final b = rippleAt(d.rippleTime + 0.08, amp: d.rippleAmp);
-    final l = rect.left + a;
-    final t = rect.top - b;
-    final rr = rect.right - a;
-    final bt = rect.bottom + b;
-    final wobbled = Rect.fromLTRB(l, t, rr, bt);
+    final wobbled = Rect.fromLTRB(rect.left + a, rect.top - b, rect.right - a, rect.bottom + b);
     final rad = math.min(r + a, math.min(wobbled.width, wobbled.height) / 2);
-    return Path()..addRRect(RRect.fromRectAndRadius(wobbled, Radius.circular(rad)));
+    return RRect.fromRectAndRadius(wobbled, Radius.circular(rad));
   }
 
   static Color _darken(Color c, double amount) {

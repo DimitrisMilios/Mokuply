@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../models/project_template.dart';
-import '../../../viewmodels/editor_viewmodel.dart';
+import '../../../viewmodels/library_viewmodel.dart';
 import '../../../widgets/clay/clay.dart';
 
 /// Template card: a clay card with a sunken preview tray holding six tiny
@@ -22,7 +22,7 @@ class TemplateCard extends StatelessWidget {
   static const double _previewHeight = 140;
   static const double _hoverTiltRad = 2 * math.pi / 180;
 
-  void _use(BuildContext context) => context.read<EditorViewModel>().openEditorWithTemplate(template);
+  void _use(BuildContext context) => context.read<LibraryViewModel>().openTemplate(template);
 
   @override
   Widget build(BuildContext context) {

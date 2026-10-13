@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocuply/data/templates/builtin_templates.dart';
 import 'package:mocuply/core/theme/app_theme.dart';
-import 'package:mocuply/models/project_template.dart';
-import 'package:mocuply/viewmodels/editor_viewmodel.dart';
-import 'package:mocuply/views/editor/widgets/multi_canvas_workspace.dart';
+import 'package:mocuply/viewmodels/editor/editor_viewmodel.dart';
+import 'package:mocuply/views/editor/workspace/multi_canvas_workspace.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -13,7 +13,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     final vm = EditorViewModel();
-    vm.openEditorWithTemplate(ProjectTemplate.allTemplates.first);
+    vm.openEditorWithTemplate(BuiltInTemplates.all.first);
     final controller = TransformationController();
 
     await tester.pumpWidget(
