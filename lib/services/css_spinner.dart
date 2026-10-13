@@ -11,36 +11,36 @@ bool _isCssSpinnerRegistered = false;
 void _ensureCssSpinnerRegistered() {
   if (kIsWeb && !_isCssSpinnerRegistered) {
     try {
-      if (html.document.getElementById('mokuply-spinner-style') == null) {
+      if (html.document.getElementById('mockuply-spinner-style') == null) {
         final style = html.StyleElement()
-          ..id = 'mokuply-spinner-style'
+          ..id = 'mockuply-spinner-style'
           ..innerHtml = '''
-            @keyframes mokuplyGpuSpin {
+            @keyframes mockuplyGpuSpin {
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }
             }
-            .mokuply-gpu-spinner {
+            .mockuply-gpu-spinner {
               width: 22px;
               height: 22px;
               box-sizing: border-box;
-              border: 3px solid rgba(13, 148, 136, 0.25);
-              border-top: 3px solid #0d9488;
+              border: 4px solid #CDE7D6;
+              border-top: 4px solid #2D6A4F;
               border-radius: 50%;
-              animation: mokuplyGpuSpin 0.7s linear infinite;
+              animation: mockuplyGpuSpin 0.7s linear infinite;
               will-change: transform;
             }
           ''';
         html.document.head?.children.add(style);
       }
 
-      ui_web.platformViewRegistry.registerViewFactory('mokuply-css-spinner', (int viewId) {
+      ui_web.platformViewRegistry.registerViewFactory('mockuply-css-spinner', (int viewId) {
         final container = html.DivElement()
           ..style.width = '22px'
           ..style.height = '22px'
           ..style.display = 'flex'
           ..style.alignItems = 'center'
           ..style.justifyContent = 'center';
-        final spinner = html.DivElement()..className = 'mokuply-gpu-spinner';
+        final spinner = html.DivElement()..className = 'mockuply-gpu-spinner';
         container.children.add(spinner);
         return container;
       });
@@ -75,7 +75,7 @@ class _SmoothSpinnerWidgetState extends State<SmoothSpinnerWidget> {
       return const SizedBox(
         width: 22,
         height: 22,
-        child: HtmlElementView(viewType: 'mokuply-css-spinner'),
+        child: HtmlElementView(viewType: 'mockuply-css-spinner'),
       );
     }
     return const SizedBox(
