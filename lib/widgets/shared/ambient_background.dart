@@ -1,62 +1,48 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 
-/// Reusable ambient glowing background stack for light glassmorphism backdrop reflections.
+/// Flat warm sand page background with an optional faint paper grain.
+///
+/// The grain tile (`assets/clay/grain_tile.png`) is drawn with
+/// `ImageRepeat.repeat` at 2 % opacity. If the asset is missing the
+/// background is plain sand, so the widget is safe before the Blender
+/// render lands.
 class AmbientBackground extends StatelessWidget {
   final Widget child;
+  final bool grain;
+  final Color color;
 
   const AmbientBackground({
     super.key,
     required this.child,
+    this.grain = true,
+    this.color = AppColors.sand,
   });
+
+  static const String grainAsset = 'assets/clay/grain_tile.png';
 
   @override
   Widget build(BuildContext context) {
     return Stack(
+      fit: StackFit.expand,
       children: [
-        // Top-Left Glowing Cream Orb
-        Positioned(
-          top: -120,
-          left: -120,
-          child: Container(
-            width: 600,
-            height: 600,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.orbCream,
+        ColoredBox(color: color),
+        if (grain)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: Opacity(
+                  opacity: 0.02,
+                  child: Image.asset(
+                    grainAsset,
+                    repeat: ImageRepeat.repeat,
+                    filterQuality: FilterQuality.none,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-
-        // Center-Right Glowing Jungle Orb
-        Positioned(
-          top: 250,
-          right: -100,
-          child: Container(
-            width: 500,
-            height: 500,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.orbJungle,
-            ),
-          ),
-        ),
-
-        // Bottom-Left Glowing Sage Orb
-        Positioned(
-          bottom: -150,
-          left: 200,
-          child: Container(
-            width: 550,
-            height: 550,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.orbSage,
-            ),
-          ),
-        ),
-
-        // Foreground Child Content
         child,
       ],
     );

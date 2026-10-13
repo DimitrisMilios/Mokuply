@@ -1,52 +1,51 @@
 import 'package:flutter/material.dart';
 
-/// Centralized color design tokens for Mocuply (Light Glassmorphism + Jungle Theme).
+/// Centralized colour design tokens for Mockuply (claymorphism).
+///
+/// Rules of thumb: selected = gold, action = green, danger = coral.
 class AppColors {
   AppColors._();
 
-  // Backgrounds & Base Palette
-  static const Color creamSoda = Color(0xFFFFF4CC);
-  static const Color background = Color(0xFFFAF6E8); // Off-white cream soda base
-  static const Color surface = Color(0xB3FFFFFF);    // Semi-transparent frosted white
-  static const Color surfaceBorder = Color(0x3D1A4731); // Soft jungle green glass border
-  static const Color surfaceSelected = Color(0x241A4731);
-  static const Color canvasViewport = Color(0xFFF3EEDC); // Slightly warmer viewport background
+  // Base
+  static const Color sand = Color(0xFFEFE8D6); // page background
+  static const Color sandDeep = Color(0xFFE6DEC8); // canvas viewport background
+  static const Color clay = Color(0xFFFBF6EA); // default clay surface
+  static const Color clayDeep = Color(0xFFF1EAD8); // sunken surface
 
-  // Glassmorphism Tokens
-  static const Color glassFill = Color(0x99FFFFFF);
-  static const Color glassFillHover = Color(0xC8FFFFFF);
-  static const Color glassBorder = Color(0x471A4731);
-  static const Color glassBorderLight = Color(0x99FFFFFF);
-  static const Color glassShadow = Color(0x1F1A4731);
+  // Clay lighting (used by ClayDecoration, never by widgets directly)
+  static const Color clayLight = Color(0xFFFFFFFF); // inner highlight, top-left
+  static const Color clayShade = Color(0xFF1A4731); // inner shade, bottom-right
+  static const Color clayShadow = Color(0xFF1A4731); // outer floating shadow
 
-  // Jungle Green Palette (Primary & Secondary)
-  static const Color primary = Color(0xFF1A4731);      // Deep Jungle Green
-  static const Color primaryDark = Color(0xFF0D281C);  // Darker Jungle Green
-  static const Color primaryLight = Color(0xFF2D6A4F); // Vibrant Sage / Light Jungle
-  static const Color secondary = Color(0xFF40916C);    // Medium Emerald / Mint
+  // Brand clay (buttons, active states)
+  static const Color primary = Color(0xFF2D6A4F);
+  static const Color primaryDeep = Color(0xFF1A4731);
+  static const Color primaryLight = Color(0xFF52B788);
+  static const Color mint = Color(0xFFCDE7D6);
 
-  // Accent Ambient Orbs for Glass Reflection Background
-  static const Color orbJungle = Color(0x351A4731);
-  static const Color orbCream = Color(0x60FFE899);
-  static const Color orbSage = Color(0x3552B788);
+  // Second accent, from the leaf
+  static const Color gold = Color(0xFFE8C464);
+  static const Color goldDeep = Color(0xFFC9A440);
+  static const Color goldLight = Color(0xFFFFE79A);
+  static const Color butter = Color(0xFFFFF0C2);
 
-  // Semantic
-  static const Color success = Color(0xFF10B981);
-  static const Color error = Color(0xFFEF4444);
+  // Semantic clay
+  static const Color coral = Color(0xFFF08A7E);
+  static const Color coralDeep = Color(0xFFD9675B);
+  static const Color sage = Color(0xFF8FBF9F);
 
-  // Badges
-  static const Color badgeBg = Color(0x1F1A4731);
-
-  // Canvas chrome
-  static const Color snapGuide = Color(0xFFE11D74); // Magenta guide line while dragging
-
-  // Text High-Contrast Colors
-  static const Color textPrimary = Color(0xFF1A4731);
-  static const Color textSecondary = Color(0xFF2D6A4F);
-  static const Color textMuted = Color(0xFF5A7B6C);
+  // Text
+  static const Color textPrimary = Color(0xFF1F3A2E);
+  static const Color textSecondary = Color(0xFF3F6350);
+  static const Color textMuted = Color(0xFF7A917F);
   static const Color textOnPrimary = Colors.white;
 
-  // Device Frames
+  // Canvas chrome (unchanged)
+  static const Color snapGuide = Color(0xFFE11D74);
   static const Color frameIphone = Color(0xFF1A4731);
   static const Color frameSamsung = Color(0xFF2D6A4F);
+
+  /// Glow and drop shadow colour baked into the exported phone render.
+  /// Pinned to the old brand green so exported PNGs stay byte-identical.
+  static const Color exportGlow = Color(0xFF1A4731);
 }
