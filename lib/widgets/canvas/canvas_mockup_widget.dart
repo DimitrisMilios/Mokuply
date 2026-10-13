@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import '../../core/constants/store_specs.dart';
 import '../../core/layout/canvas_geometry.dart';
 import '../../models/template_data.dart';
 import '../../viewmodels/editor_viewmodel.dart';
+import '../clay/clay.dart';
 import 'device_frame_widget.dart';
 
 /// Renders one screen of the project onto a canvas of any size.
@@ -84,7 +86,14 @@ class CanvasMockupWidget extends StatelessWidget {
                   filterQuality: FilterQuality.medium,
                 ),
               ),
-            _DesignLayer(data: data, itemIndex: itemIndex, vm: vm, geometry: geometry, decodeFactor: decodeFactor),
+            _DesignLayer(
+              data: data,
+              itemIndex: itemIndex,
+              vm: vm,
+              geometry: geometry,
+              decodeFactor: decodeFactor,
+              isExporting: isExporting,
+            ),
           ],
         ),
       ),
@@ -140,12 +149,17 @@ class _DesignLayer extends StatefulWidget {
   final CanvasGeometry geometry;
   final double? decodeFactor;
 
+  /// True on the export capture: the device placeholder keeps its exported
+  /// pixels and no preview-only chrome is built.
+  final bool isExporting;
+
   const _DesignLayer({
     required this.data,
     required this.itemIndex,
     required this.vm,
     required this.geometry,
     required this.decodeFactor,
+    required this.isExporting,
   });
 
   @override
@@ -222,6 +236,7 @@ class _DesignLayerState extends State<_DesignLayer> {
               platform: platform,
               scale: geometry.scale,
               decodeWidth: decodeWidthFor(DeviceFrameWidget.bodyWidthFor(geometry.scale), device.scale),
+              previewPlaceholder: !widget.isExporting,
             ),
           ),
 
@@ -576,13 +591,30 @@ class _CanvasElement extends StatefulWidget {
   State<_CanvasElement> createState() => _CanvasElementState();
 }
 
-class _CanvasElementState extends State<_CanvasElement> {
+class _CanvasElementState extends State<_CanvasElement> with SingleTickerProviderStateMixin {
   static const double _handleSize = 10.0;
   static const double _rotateHandleGap = 26.0;
   static const double _snapPixels = 6.0;
   static const Duration _doubleTapWindow = Duration(milliseconds: 320);
 
+  /// Corner handles pop in this far apart; the rotate handle comes last.
+  static const Duration _handleStagger = Duration(milliseconds: 20);
+
+  /// How long deselected handles stay mounted while they scale out.
+  static const Duration _handleExit = Duration(milliseconds: 100);
+
   bool _hovering = false;
+
+  // Preview-only chrome motion. None of this touches the exported child:
+  // it only exists inside the `interactive` branch of [build].
+  final JellyController _jelly = JellyController();
+  AnimationController? _liftController;
+  AnimationController get _lift => _liftController ??= AnimationController.unbounded(vsync: this, value: 0);
+  bool _handlesMounted = false;
+  Timer? _handleHideTimer;
+  DateTime? _lastDragTime;
+  double _vx = 0;
+  double _vy = 0;
 
   // Move drag
   Offset? _dragOffset;
@@ -603,6 +635,15 @@ class _CanvasElementState extends State<_CanvasElement> {
 
   bool get _dragging => _dragOffset != null;
   bool get _busy => _dragging || _resizing || _dragRotation != null;
+
+  ClayMotion get _motion => ClayMotion.of(context);
+
+  @override
+  void dispose() {
+    _handleHideTimer?.cancel();
+    _liftController?.dispose();
+    super.dispose();
+  }
 
   Offset get _currentOffset => _dragOffset ?? Offset(widget.offsetX, widget.offsetY);
 
@@ -628,10 +669,35 @@ class _CanvasElementState extends State<_CanvasElement> {
     widget.onSelect?.call(widget.elementId);
     _dragStartPointer = _toCanvas(d.globalPosition);
     _dragStartOffset = Offset(widget.offsetX, widget.offsetY);
+    _lastDragTime = DateTime.now();
+    _vx = 0;
+    _vy = 0;
+    // The selection box lifts (its shadow spreads) while the element is held.
+    _lift.springTo(1, spring: _motion.snappy);
     setState(() => _dragOffset = _dragStartOffset);
   }
 
+  /// Feeds a smoothed pointer velocity to the jelly, at half amplitude so the
+  /// user's content under the chrome stays readable.
+  void _feedVelocity(Offset delta) {
+    final now = DateTime.now();
+    final last = _lastDragTime;
+    _lastDragTime = now;
+    if (last == null) return;
+    final double dt = now.difference(last).inMicroseconds / Duration.microsecondsPerSecond;
+    if (dt <= 0) return;
+    _vx = _vx * 0.6 + (delta.dx / dt) * 0.4;
+    _vy = _vy * 0.6 + (delta.dy / dt) * 0.4;
+    _jelly.velocity(_vx * 0.5, velocityY: _vy * 0.5);
+  }
+
+  void _settleChrome() {
+    _jelly.settle();
+    _lift.springTo(0, spring: _motion.bouncy);
+  }
+
   void _updateMove(DragUpdateDetails d) {
+    _feedVelocity(d.delta);
     final canvasDelta = _toCanvas(d.globalPosition) - _dragStartPointer;
     Offset next = _dragStartOffset + widget.geometry.deltaToOffsetUnits(canvasDelta);
 
@@ -654,12 +720,14 @@ class _CanvasElementState extends State<_CanvasElement> {
   void _endMove() {
     final result = _dragOffset;
     widget.onSnap?.call(_SnapGuides.none);
+    _settleChrome();
     setState(() => _dragOffset = null);
     if (result != null) widget.onMoved?.call(widget.elementId, result);
   }
 
   void _cancelMove() {
     widget.onSnap?.call(_SnapGuides.none);
+    _settleChrome();
     setState(() => _dragOffset = null);
   }
 
@@ -744,39 +812,23 @@ class _CanvasElementState extends State<_CanvasElement> {
   }
 
   Future<void> _showContextMenu(Offset globalPosition) async {
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
-    if (overlay == null) return;
-    final local = overlay.globalToLocal(globalPosition);
-    final position = RelativeRect.fromLTRB(
-      local.dx,
-      local.dy,
-      overlay.size.width - local.dx,
-      overlay.size.height - local.dy,
-    );
     final bool isHeadline = widget.elementId == 'title' || widget.elementId == 'subtitle';
 
-    final action = await showMenu<String>(
+    final action = await showClayMenu<String>(
       context: context,
-      position: position,
+      position: globalPosition,
       items: [
         if (widget.onDuplicate != null)
-          const PopupMenuItem(value: 'duplicate', height: 36, child: _MenuRow(Icons.content_copy_rounded, 'Duplicate')),
-        const PopupMenuItem(
-          value: 'reset',
-          height: 36,
-          child: _MenuRow(Icons.center_focus_weak_rounded, 'Reset position'),
-        ),
+          const ClayMenuItem(value: 'duplicate', label: 'Duplicate', icon: Icons.content_copy_rounded),
+        const ClayMenuItem(value: 'reset', label: 'Reset position', icon: Icons.center_focus_weak_rounded),
         if (widget.onRotated != null && widget.rotation != 0)
-          const PopupMenuItem(
-            value: 'straighten',
-            height: 36,
-            child: _MenuRow(Icons.straighten_rounded, 'Straighten (0°)'),
-          ),
+          const ClayMenuItem(value: 'straighten', label: 'Straighten (0°)', icon: Icons.straighten_rounded),
         if (widget.onDelete != null)
-          PopupMenuItem(
+          ClayMenuItem(
             value: 'delete',
-            height: 36,
-            child: _MenuRow(Icons.delete_outline_rounded, isHeadline ? 'Clear text' : 'Delete', danger: true),
+            label: isHeadline ? 'Clear text' : 'Delete',
+            icon: Icons.delete_outline_rounded,
+            danger: true,
           ),
       ],
     );
@@ -806,15 +858,68 @@ class _CanvasElementState extends State<_CanvasElement> {
     if (widget.interactive) {
       final bool highlighted = widget.isSelected || _hovering || _busy;
       final bool showHandles = widget.isSelected && !_dragging;
+
+      // Handles stay mounted for a moment after deselection so they can
+      // scale out together; while shown, any pending hide is cancelled.
+      if (showHandles) {
+        _handleHideTimer?.cancel();
+        _handleHideTimer = null;
+        _handlesMounted = true;
+      } else if (_handlesMounted && _handleHideTimer == null) {
+        _handleHideTimer = Timer(_handleExit, () {
+          if (!mounted) return;
+          setState(() {
+            _handlesMounted = false;
+            _handleHideTimer = null;
+          });
+        });
+      }
+
       // Handles and borders are drawn inside the element's scale transform and
       // the workspace zoom, so they are counter-scaled to keep a constant
       // on-screen size. Only selected elements subscribe to zoom changes.
-      final double zoom = widget.isSelected ? CanvasViewportZoom.of(context) : 1.0;
+      final double zoom = (widget.isSelected || _handlesMounted) ? CanvasViewportZoom.of(context) : 1.0;
       final double u = 1 / math.max(effectiveScale * zoom, 0.01);
 
       // The handles live inside this margin, so they stay inside the element's
       // hit-test bounds and never fall through to the pan/zoom viewer.
       final double pad = (_rotateHandleGap + _handleSize * 2.2) * u;
+      final double outlineWidth = highlighted ? (widget.borderWidth * u).clamp(0.5, 40.0) : 0.0;
+
+      // Preview-only selection chrome. It is painted UNDER the content and
+      // skews with the jelly while dragging; the content itself is never
+      // transformed, so what the user sees stays what gets exported.
+      final Widget outline = IgnorePointer(
+        child: JellyTransform(
+          controller: _jelly,
+          child: AnimatedBuilder(
+            animation: _lift,
+            builder: (context, _) {
+              final double lift = _lift.value.clamp(0.0, 1.3);
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: highlighted ? AppColors.gold : Colors.transparent,
+                    width: outlineWidth,
+                  ),
+                  borderRadius: BorderRadius.circular(widget.borderRadius),
+                  color: highlighted ? AppColors.gold.withValues(alpha: 0.05) : Colors.transparent,
+                  boxShadow: lift > 0.01
+                      ? [
+                          BoxShadow(
+                            color: AppColors.clayShadow.withValues(alpha: 0.18 * lift),
+                            blurRadius: 26 * u * lift,
+                            spreadRadius: 2 * u * lift,
+                            offset: Offset(0, 10 * u * lift),
+                          ),
+                        ]
+                      : null,
+                ),
+              );
+            },
+          ),
+        ),
+      );
 
       child = MouseRegion(
         cursor: SystemMouseCursors.move,
@@ -842,37 +947,36 @@ class _CanvasElementState extends State<_CanvasElement> {
                       },
                     ),
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: highlighted ? AppColors.primary : Colors.transparent,
-                        width: highlighted ? (widget.borderWidth * u).clamp(0.5, 40.0) : 0.0,
-                      ),
-                      borderRadius: BorderRadius.circular(widget.borderRadius),
-                      color: highlighted ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
-                    ),
-                    child: child,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(child: outline),
+                      Padding(padding: const EdgeInsets.all(4), child: child),
+                    ],
                   ),
                 ),
               ),
-              if (showHandles && widget.onResized != null) ...[
-                for (final corner in _Corner.values)
+              if (_handlesMounted && widget.onResized != null) ...[
+                for (final (i, corner) in _Corner.values.indexed)
                   _ResizeHandle(
                     corner: corner,
                     inset: pad,
                     size: _handleSize * u,
+                    visible: showHandles,
+                    delay: _handleStagger * i,
                     onStart: _startResize,
                     onUpdate: _updateResize,
                     onEnd: _endResize,
                     onCancel: _cancelResize,
                   ),
               ],
-              if (showHandles && widget.onRotated != null)
+              if (_handlesMounted && widget.onRotated != null)
                 _RotateHandle(
                   inset: pad,
                   size: _handleSize * u,
                   gap: _rotateHandleGap * u,
+                  visible: showHandles,
+                  delay: _handleStagger * _Corner.values.length,
                   onStart: _startRotate,
                   onUpdate: _updateRotate,
                   onEnd: _endRotate,
@@ -889,11 +993,15 @@ class _CanvasElementState extends State<_CanvasElement> {
                       child: Transform.scale(
                         scale: u,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(6)),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(color: AppColors.gold, borderRadius: BorderRadius.circular(8)),
                           child: Text(
                             '${rotationDeg.round()}°',
-                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ),
@@ -920,27 +1028,96 @@ class _CanvasElementState extends State<_CanvasElement> {
   }
 }
 
-class _MenuRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool danger;
-  const _MenuRow(this.icon, this.label, {this.danger = false});
+/// Scales a handle in from 0 after [delay] (bouncy), and out together
+/// with the others in 100 ms when [visible] turns false. Cheap: one
+/// unbounded controller per handle, and a hidden handle ignores pointers.
+class _HandlePop extends StatefulWidget {
+  final bool visible;
+  final Duration delay;
+  final Alignment alignment;
+  final Widget child;
+
+  const _HandlePop({
+    required this.visible,
+    required this.delay,
+    this.alignment = Alignment.center,
+    required this.child,
+  });
+
+  @override
+  State<_HandlePop> createState() => _HandlePopState();
+}
+
+class _HandlePopState extends State<_HandlePop> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController.unbounded(vsync: this, value: 0);
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.visible) _show();
+  }
+
+  @override
+  void didUpdateWidget(_HandlePop oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.visible == widget.visible) return;
+    if (widget.visible) {
+      _show();
+    } else {
+      _timer?.cancel();
+      _timer = null;
+      _c.animateTo(0, duration: const Duration(milliseconds: 100), curve: ClaySpringCurve.snappy);
+    }
+  }
+
+  void _show() {
+    _timer?.cancel();
+    _timer = Timer(widget.delay, () {
+      _timer = null;
+      if (mounted) _c.springTo(1, spring: ClayMotion.of(context).bouncy);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _c.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? AppColors.error : AppColors.textPrimary;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 10),
-        Text(
-          label,
-          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+    return IgnorePointer(
+      ignoring: !widget.visible,
+      child: AnimatedBuilder(
+        animation: _c,
+        child: widget.child,
+        builder: (context, child) => Transform.scale(
+          scale: math.max(0.0, _c.value),
+          alignment: widget.alignment,
+          child: child,
         ),
-      ],
+      ),
     );
   }
+}
+
+/// The handle bead: white clay with a gold rim and a soft 2 px shadow.
+BoxDecoration _handleDecoration(double size, {bool round = false}) {
+  return BoxDecoration(
+    color: Colors.white,
+    shape: round ? BoxShape.circle : BoxShape.rectangle,
+    borderRadius: round ? null : BorderRadius.circular(size * 0.4),
+    border: Border.all(color: AppColors.gold, width: size * 0.16),
+    boxShadow: [
+      BoxShadow(
+        color: AppColors.clayShadow.withValues(alpha: 0.3),
+        blurRadius: size * 0.2,
+        offset: Offset(0, size * 0.1),
+      ),
+    ],
+  );
 }
 
 enum _Corner { topLeft, topRight, bottomLeft, bottomRight }
@@ -952,6 +1129,8 @@ class _ResizeHandle extends StatelessWidget {
   /// Distance from the stack edge to the element box the handle sits on.
   final double inset;
   final double size;
+  final bool visible;
+  final Duration delay;
   final GestureDragStartCallback onStart;
   final GestureDragUpdateCallback onUpdate;
   final VoidCallback onEnd;
@@ -961,6 +1140,8 @@ class _ResizeHandle extends StatelessWidget {
     required this.corner,
     required this.inset,
     required this.size,
+    required this.visible,
+    required this.delay,
     required this.onStart,
     required this.onUpdate,
     required this.onEnd,
@@ -981,30 +1162,25 @@ class _ResizeHandle extends StatelessWidget {
       bottom: top ? null : edge,
       left: left ? edge : null,
       right: left ? null : edge,
-      child: MouseRegion(
-        cursor: cursor,
-        child: RawGestureDetector(
-          behavior: HitTestBehavior.opaque,
-          gestures: {
-            _EagerPanGestureRecognizer: GestureRecognizerFactoryWithHandlers<_EagerPanGestureRecognizer>(
-              () => _EagerPanGestureRecognizer(),
-              (instance) {
-                instance.onStart = onStart;
-                instance.onUpdate = onUpdate;
-                instance.onEnd = (_) => onEnd();
-                instance.onCancel = onCancel;
-              },
-            ),
-          },
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(size * 0.25),
-              border: Border.all(color: AppColors.primary, width: size * 0.16),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: size * 0.4)],
-            ),
+      child: _HandlePop(
+        visible: visible,
+        delay: delay,
+        child: MouseRegion(
+          cursor: cursor,
+          child: RawGestureDetector(
+            behavior: HitTestBehavior.opaque,
+            gestures: {
+              _EagerPanGestureRecognizer: GestureRecognizerFactoryWithHandlers<_EagerPanGestureRecognizer>(
+                () => _EagerPanGestureRecognizer(),
+                (instance) {
+                  instance.onStart = onStart;
+                  instance.onUpdate = onUpdate;
+                  instance.onEnd = (_) => onEnd();
+                  instance.onCancel = onCancel;
+                },
+              ),
+            },
+            child: Container(width: size, height: size, decoration: _handleDecoration(size)),
           ),
         ),
       ),
@@ -1018,6 +1194,8 @@ class _RotateHandle extends StatelessWidget {
   final double inset;
   final double size;
   final double gap;
+  final bool visible;
+  final Duration delay;
   final GestureDragStartCallback onStart;
   final GestureDragUpdateCallback onUpdate;
   final VoidCallback onEnd;
@@ -1027,6 +1205,8 @@ class _RotateHandle extends StatelessWidget {
     required this.inset,
     required this.size,
     required this.gap,
+    required this.visible,
+    required this.delay,
     required this.onStart,
     required this.onUpdate,
     required this.onEnd,
@@ -1040,40 +1220,40 @@ class _RotateHandle extends StatelessWidget {
       top: inset - gap - knob,
       left: 0,
       right: 0,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          MouseRegion(
-            cursor: SystemMouseCursors.grab,
-            child: RawGestureDetector(
-              behavior: HitTestBehavior.opaque,
-              gestures: {
-                _EagerPanGestureRecognizer: GestureRecognizerFactoryWithHandlers<_EagerPanGestureRecognizer>(
-                  () => _EagerPanGestureRecognizer(),
-                  (instance) {
-                    instance.onStart = onStart;
-                    instance.onUpdate = onUpdate;
-                    instance.onEnd = (_) => onEnd();
-                    instance.onCancel = onCancel;
-                  },
+      child: _HandlePop(
+        visible: visible,
+        delay: delay,
+        alignment: Alignment.bottomCenter,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            MouseRegion(
+              cursor: SystemMouseCursors.grab,
+              child: RawGestureDetector(
+                behavior: HitTestBehavior.opaque,
+                gestures: {
+                  _EagerPanGestureRecognizer: GestureRecognizerFactoryWithHandlers<_EagerPanGestureRecognizer>(
+                    () => _EagerPanGestureRecognizer(),
+                    (instance) {
+                      instance.onStart = onStart;
+                      instance.onUpdate = onUpdate;
+                      instance.onEnd = (_) => onEnd();
+                      instance.onCancel = onCancel;
+                    },
+                  ),
+                },
+                child: Container(
+                  width: knob,
+                  height: knob,
+                  decoration: _handleDecoration(size, round: true),
+                  child: Icon(Icons.rotate_right_rounded, size: size * 0.75, color: AppColors.goldDeep),
                 ),
-              },
-              child: Container(
-                width: knob,
-                height: knob,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary, width: size * 0.16),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: size * 0.4)],
-                ),
-                child: Icon(Icons.rotate_right_rounded, size: size * 0.75, color: AppColors.primary),
               ),
             ),
-          ),
-          // Stem connecting the handle to the element.
-          Container(width: math.max(1.0, size * 0.12), height: gap, color: AppColors.primary),
-        ],
+            // Stem connecting the handle to the element.
+            Container(width: math.max(1.0, size * 0.12), height: gap, color: AppColors.gold),
+          ],
+        ),
       ),
     );
   }

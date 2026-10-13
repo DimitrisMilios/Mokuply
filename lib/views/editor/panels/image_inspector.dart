@@ -4,7 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/store_specs.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
-import '../../../widgets/shared/labeled_slider.dart';
+import '../../../widgets/clay/clay.dart';
 
 /// Controls for one custom image asset.
 class ImageInspector extends StatelessWidget {
@@ -23,16 +23,16 @@ class ImageInspector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          child: Container(
-            height: 120,
-            color: Colors.black.withValues(alpha: 0.05),
+        ClayWell(
+          padding: const EdgeInsets.all(8),
+          height: 136,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusClaySm - 6),
             child: Image.memory(image.imageBytes, fit: BoxFit.contain, gaplessPlayback: true),
           ),
         ),
-        const SizedBox(height: 12),
-        LabeledSlider(
+        const SizedBox(height: 14),
+        ClaySlider(
           label: 'Scale',
           valueText: '${(image.scale * 100).toInt()}%',
           value: image.scale.clamp(ScaleLimits.imageMin, ScaleLimits.imageMax),
@@ -41,7 +41,7 @@ class ImageInspector extends StatelessWidget {
           onChanged: (v) => vm.setCustomImageScale(image.id, v),
         ),
         const SizedBox(height: 8),
-        LabeledSlider(
+        ClaySlider(
           label: 'Rotation',
           valueText: '${image.rotation.toInt()}°',
           value: image.rotation,
@@ -50,7 +50,7 @@ class ImageInspector extends StatelessWidget {
           onChanged: (v) => vm.setCustomImageRotation(image.id, v),
         ),
         const SizedBox(height: 8),
-        LabeledSlider(
+        ClaySlider(
           label: 'Opacity',
           valueText: '${(image.opacity * 100).toInt()}%',
           value: image.opacity,
@@ -58,34 +58,24 @@ class ImageInspector extends StatelessWidget {
           max: 1.0,
           onChanged: (v) => vm.setCustomImageOpacity(image.id, v),
         ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          dense: true,
-          title: const Text(
-            'Drop shadow',
-            style: TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
-          ),
+        const SizedBox(height: 10),
+        ClayToggle(
+          label: 'Shadow',
           value: image.hasShadow,
-          activeTrackColor: AppColors.primary,
-          activeThumbColor: Colors.white,
           onChanged: (v) => vm.setCustomImageShadow(image.id, v),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 10),
         const Text(
-          'On the canvas: drag to move, corner handles to resize, the top handle to rotate.',
-          style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+          'Drag to move, corners to resize, top handle to rotate.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.3),
         ),
-        const SizedBox(height: 14),
-        OutlinedButton.icon(
+        const SizedBox(height: 10),
+        ClayButton.text(
+          label: 'Delete image',
+          icon: Icons.delete_outline_rounded,
+          danger: true,
+          expand: true,
           onPressed: () => vm.removeCustomImageItem(image.id),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.error,
-            side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
-            minimumSize: const Size.fromHeight(36),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
-          ),
-          icon: const Icon(Icons.delete_outline_rounded, size: 16),
-          label: const Text('Delete image', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
         ),
       ],
     );

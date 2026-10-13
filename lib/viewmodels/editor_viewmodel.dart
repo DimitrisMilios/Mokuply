@@ -1044,7 +1044,7 @@ class EditorViewModel extends ChangeNotifier {
 
       await ExportService.downloadFileWeb(
         bytes: ExportService.createZipArchive(files),
-        filename: 'Mokuply_${target.exportFolderName}.zip',
+        filename: 'Mockuply_${target.exportFolderName}.zip',
         mimeType: 'application/zip',
       );
     });
@@ -1066,7 +1066,7 @@ class EditorViewModel extends ChangeNotifier {
 
       await ExportService.downloadFileWeb(
         bytes: ExportService.createZipArchive(files),
-        filename: 'Mokuply_StoreScreenshots_AllPlatforms.zip',
+        filename: 'Mockuply_StoreScreenshots_AllPlatforms.zip',
         mimeType: 'application/zip',
       );
     });
