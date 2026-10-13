@@ -86,28 +86,37 @@ class JellyRipple extends InheritedWidget {
 }
 
 class _JellyTransformState extends State<JellyTransform> with TickerProviderStateMixin {
-  late final AnimationController _x;
-  late final AnimationController _y;
-  late final AnimationController _skewX;
-  late final AnimationController _skewY;
-  late final AnimationController _rot;
-  late final AnimationController _ripple;
+  // Controllers are created on first use: most controls are never poked,
+  // and six controllers per control add up to hundreds of tickers in the
+  // editor. [_tick] relays their frames to the builder.
+  final _Tick _tick = _Tick();
+  AnimationController? _x;
+  AnimationController? _y;
+  AnimationController? _skewX;
+  AnimationController? _skewY;
+  AnimationController? _rot;
+  AnimationController? _rippleController;
 
   bool _pressed = false;
+
+  AnimationController _spring(double value) =>
+      AnimationController.unbounded(vsync: this, value: value)..addListener(_tick.ping);
+
+  AnimationController get _scaleX => _x ??= _spring(1.0);
+  AnimationController get _scaleY => _y ??= _spring(1.0);
+  AnimationController get _skewXc => _skewX ??= _spring(0.0);
+  AnimationController get _skewYc => _skewY ??= _spring(0.0);
+  AnimationController get _rotation => _rot ??= _spring(0.0);
+  AnimationController get _ripple =>
+      _rippleController ??= AnimationController(vsync: this, duration: const Duration(milliseconds: 700))
+        ..addListener(_onRippleTick)
+        ..addStatusListener((s) {
+          if (s == AnimationStatus.completed) widget.onRipple?.call(-1);
+        });
 
   @override
   void initState() {
     super.initState();
-    _x = AnimationController.unbounded(vsync: this, value: 1.0);
-    _y = AnimationController.unbounded(vsync: this, value: 1.0);
-    _skewX = AnimationController.unbounded(vsync: this, value: 0.0);
-    _skewY = AnimationController.unbounded(vsync: this, value: 0.0);
-    _rot = AnimationController.unbounded(vsync: this, value: 0.0);
-    _ripple = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
-    _ripple.addListener(_onRippleTick);
-    _ripple.addStatusListener((s) {
-      if (s == AnimationStatus.completed) widget.onRipple?.call(-1);
-    });
     widget.controller?._state = this;
   }
 
@@ -123,19 +132,17 @@ class _JellyTransformState extends State<JellyTransform> with TickerProviderStat
   @override
   void dispose() {
     if (widget.controller?._state == this) widget.controller?._state = null;
-    _x.dispose();
-    _y.dispose();
-    _skewX.dispose();
-    _skewY.dispose();
-    _rot.dispose();
-    _ripple.dispose();
+    for (final c in [_x, _y, _skewX, _skewY, _rot, _rippleController]) {
+      c?.dispose();
+    }
+    _tick.dispose();
     super.dispose();
   }
 
   ClayMotion get _motion => ClayMotion.of(context);
 
   double get _squash => widget.squash ?? _motion.squash;
-  SpringDescription get _spring => widget.spring ?? _motion.liquid;
+  SpringDescription get _releaseSpring => widget.spring ?? _motion.liquid;
 
   void _onRippleTick() {
     final t = _ripple.value * 0.7;
@@ -146,18 +153,18 @@ class _JellyTransformState extends State<JellyTransform> with TickerProviderStat
   void _poke(double? squash) {
     _pressed = true;
     final s = squash ?? _squash;
-    _x.springTo(1 + s, spring: _motion.snappy);
-    _y.springTo(1 - s, spring: _motion.snappy);
+    _scaleX.springTo(1 + s, spring: _motion.snappy);
+    _scaleY.springTo(1 - s, spring: _motion.snappy);
   }
 
   void _release() {
-    if (!_pressed && _x.value == 1 && _y.value == 1) return;
+    if (!_pressed && (_x?.value ?? 1) == 1 && (_y?.value ?? 1) == 1) return;
     _pressed = false;
-    _x.springTo(1.0, spring: _spring);
+    _scaleX.springTo(1.0, spring: _releaseSpring);
     // One frame later, so X and Y are out of phase and the element wobbles
     // wide / tall / wide instead of pulsing.
     Future<void>.delayed(const Duration(milliseconds: 16), () {
-      if (mounted) _y.springTo(1.0, spring: _spring);
+      if (mounted) _scaleY.springTo(1.0, spring: _releaseSpring);
     });
     if (_motion.ripple && (widget.onRipple != null || widget.surfaceRipple)) {
       _ripple.forward(from: 0);
@@ -173,21 +180,21 @@ class _JellyTransformState extends State<JellyTransform> with TickerProviderStat
 
   void _velocity(double vx, double vy) {
     if (!_motion.skew) return;
-    final kx = skewForVelocity(vx);
-    final ky = skewForVelocity(vy);
-    _skewX.value = kx;
-    _skewY.value = ky;
+    _skewXc.value = skewForVelocity(vx);
+    _skewYc.value = skewForVelocity(vy);
   }
 
   void _settle() {
-    _skewX.springTo(0, spring: _motion.bouncy);
-    _skewY.springTo(0, spring: _motion.bouncy);
+    // Nothing to settle if no drag ever skewed this control.
+    if (_skewX == null && _skewY == null) return;
+    _skewXc.springTo(0, spring: _motion.bouncy);
+    _skewYc.springTo(0, spring: _motion.bouncy);
   }
 
   void _wobble(double radians) {
     if (!_motion.enabled) return;
-    _rot.springTo(radians, spring: _motion.snappy).then((_) {
-      if (mounted) _rot.springTo(0, spring: _spring);
+    _rotation.springTo(radians, spring: _motion.snappy).then((_) {
+      if (mounted) _rotation.springTo(0, spring: _releaseSpring);
     });
   }
 
@@ -195,24 +202,26 @@ class _JellyTransformState extends State<JellyTransform> with TickerProviderStat
   Widget build(BuildContext context) {
     Widget child = widget.child;
     if (widget.surfaceRipple && widget.onRipple == null) {
-      child = JellyRipple(time: _ripple.isAnimating ? _ripple.value * 0.7 : -1, child: child);
+      final ripple = _rippleController;
+      child = JellyRipple(time: ripple != null && ripple.isAnimating ? ripple.value * 0.7 : -1, child: child);
     }
     return AnimatedBuilder(
-      animation: Listenable.merge([_x, _y, _skewX, _skewY, _rot]),
+      animation: _tick,
       child: child,
       builder: (context, child) {
         final m = Matrix4.identity()
-          ..setEntry(0, 1, _skewX.value)
-          ..setEntry(1, 0, _skewY.value);
-        m.multiply(Matrix4.rotationZ(_rot.value));
-        m.multiply(Matrix4.diagonal3Values(_x.value, _y.value, 1));
-        return Transform(
-          transform: m,
-          alignment: widget.alignment,
-          filterQuality: null,
-          child: child,
-        );
+          ..setEntry(0, 1, _skewX?.value ?? 0)
+          ..setEntry(1, 0, _skewY?.value ?? 0);
+        final rot = _rot?.value ?? 0;
+        if (rot != 0) m.multiply(Matrix4.rotationZ(rot));
+        m.multiply(Matrix4.diagonal3Values(_x?.value ?? 1, _y?.value ?? 1, 1));
+        return Transform(transform: m, alignment: widget.alignment, filterQuality: null, child: child);
       },
     );
   }
+}
+
+/// Relays controller frames to the builder without merging listenables.
+class _Tick extends ChangeNotifier {
+  void ping() => notifyListeners();
 }

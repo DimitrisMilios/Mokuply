@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
-import '../../../viewmodels/editor_viewmodel.dart';
+import '../../../viewmodels/library_viewmodel.dart';
 import '../../../widgets/clay/clay.dart';
 import '../../../widgets/shared/brand_logo.dart';
 
@@ -23,7 +23,7 @@ class HomeNavbar extends StatelessWidget {
           builder: (context, constraints) {
             final bool showStartLabel = constraints.maxWidth >= 480;
             final bool showWordmark = constraints.maxWidth >= 360;
-            void start() => context.read<EditorViewModel>().openEditorWithNewProject();
+            void start() => context.read<LibraryViewModel>().startNewProject();
 
             return Row(
               children: [

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/store_specs.dart';
-import '../../../viewmodels/editor_viewmodel.dart';
+import '../../../viewmodels/editor/editor_viewmodel.dart';
 import '../../../widgets/clay/clay.dart';
 import 'background_panel.dart';
 
@@ -13,7 +13,11 @@ class ScreenInspector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = Provider.of<EditorViewModel>(context);
+    final (index, count, section, layout) =
+        context.select<EditorViewModel, (int, int, ScreenInspectorSection, LayoutMode)>(
+      (vm) => (vm.selectedIndex, vm.screenshotsCount, vm.screenSection, vm.layoutMode),
+    );
+    final vm = context.read<EditorViewModel>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -27,7 +31,7 @@ class ScreenInspector extends StatelessWidget {
                 icon: Icons.copy_rounded,
                 size: ClayButtonSize.compact,
                 expand: true,
-                onPressed: () => vm.duplicateScreenshot(vm.selectedIndex),
+                onPressed: () => vm.duplicateScreenshot(index),
               ),
             ),
             const SizedBox(width: 10),
@@ -38,7 +42,7 @@ class ScreenInspector extends StatelessWidget {
                 size: ClayButtonSize.compact,
                 expand: true,
                 textColor: AppColors.coralDeep,
-                onPressed: vm.screenshotsCount > 1 ? () => vm.removeScreenshot(vm.selectedIndex) : null,
+                onPressed: count > 1 ? () => vm.removeScreenshot(index) : null,
               ),
             ),
           ],
@@ -60,13 +64,13 @@ class ScreenInspector extends StatelessWidget {
               icon: Icons.palette_rounded,
             ),
           ],
-          selected: vm.screenSection,
+          selected: section,
           onChanged: vm.showScreenSection,
         ),
         const SizedBox(height: 16),
 
-        switch (vm.screenSection) {
-          ScreenInspectorSection.layout => _LayoutSection(vm: vm),
+        switch (section) {
+          ScreenInspectorSection.layout => _LayoutSection(layout: layout, onChanged: vm.setLayoutMode),
           ScreenInspectorSection.background => const BackgroundSection(),
         },
       ],
@@ -75,8 +79,9 @@ class ScreenInspector extends StatelessWidget {
 }
 
 class _LayoutSection extends StatelessWidget {
-  final EditorViewModel vm;
-  const _LayoutSection({required this.vm});
+  final LayoutMode layout;
+  final ValueChanged<LayoutMode> onChanged;
+  const _LayoutSection({required this.layout, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -98,8 +103,8 @@ class _LayoutSection extends StatelessWidget {
                   padding: EdgeInsets.only(bottom: mode == LayoutMode.values.last ? 0 : 4),
                   child: _PresetTile(
                     mode: mode,
-                    selected: vm.layoutMode == mode,
-                    onTap: () => vm.setLayoutMode(mode),
+                    selected: layout == mode,
+                    onTap: () => onChanged(mode),
                   ),
                 ),
             ],

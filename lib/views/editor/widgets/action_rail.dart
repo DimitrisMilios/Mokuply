@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
-import '../../../viewmodels/editor_viewmodel.dart';
+import '../../../core/constants/store_specs.dart';
+import '../../../viewmodels/editor/editor_viewmodel.dart';
 import '../../../widgets/clay/clay.dart';
 
 /// Narrow left rail with the essential actions. Adding something selects it,
@@ -18,9 +19,12 @@ class ActionRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<EditorViewModel>();
+    final (nothingSelected, section, showBoth, platform) =
+        context.select<EditorViewModel, (bool, ScreenInspectorSection, bool, TargetPlatformType)>(
+      (vm) => (vm.selectedElementId == null, vm.screenSection, vm.showBothStores, vm.platform),
+    );
+    final vm = context.read<EditorViewModel>();
     final motion = ClayMotion.of(context);
-    final bool nothingSelected = vm.selectedElementId == null;
 
     final items = <Widget>[
       const _RailSectionLabel('Add'),
@@ -49,7 +53,7 @@ class ActionRail extends StatelessWidget {
         asset: 'upload',
         icon: Icons.upload_rounded,
         label: 'Shot',
-        tooltip: 'Upload a ${vm.platform.screenshotLabel} screenshot into the selected frame',
+        tooltip: 'Upload a ${platform.screenshotLabel} screenshot into the selected frame',
         onTap: () => vm.uploadScreenshotToSelectedFrame(),
       ),
       const _RailGap(),
@@ -59,7 +63,7 @@ class ActionRail extends StatelessWidget {
         icon: Icons.dashboard_customize_rounded,
         label: 'Layout',
         tooltip: 'Layout presets',
-        active: nothingSelected && vm.screenSection == ScreenInspectorSection.layout,
+        active: nothingSelected && section == ScreenInspectorSection.layout,
         onTap: () => vm.showScreenSection(ScreenInspectorSection.layout),
       ),
       _RailButton(
@@ -67,20 +71,20 @@ class ActionRail extends StatelessWidget {
         icon: Icons.palette_rounded,
         label: 'Backdrop',
         tooltip: 'Background colour, gradient or image',
-        active: nothingSelected && vm.screenSection == ScreenInspectorSection.background,
+        active: nothingSelected && section == ScreenInspectorSection.background,
         onTap: () => vm.showScreenSection(ScreenInspectorSection.background),
       ),
       const _RailGap(),
       const _RailSectionLabel('View'),
       _RailButton(
-        asset: vm.showBothStores ? 'rows_both' : 'rows_one',
-        icon: vm.showBothStores ? Icons.view_agenda_rounded : Icons.crop_portrait_rounded,
-        label: vm.showBothStores ? 'Both' : 'One',
-        tooltip: vm.showBothStores
+        asset: showBoth ? 'rows_both' : 'rows_one',
+        icon: showBoth ? Icons.view_agenda_rounded : Icons.crop_portrait_rounded,
+        label: showBoth ? 'Both' : 'One',
+        tooltip: showBoth
             ? 'Showing both stores as rows. Click to show only the active store.'
-            : 'Showing the ${vm.platform.shortName} only. Click to show both stores.',
-        active: vm.showBothStores,
-        onTap: () => vm.setShowBothStores(!vm.showBothStores),
+            : 'Showing the ${platform.shortName} only. Click to show both stores.',
+        active: showBoth,
+        onTap: () => vm.setShowBothStores(!showBoth),
       ),
       const _RailGap(),
       _RailButton(

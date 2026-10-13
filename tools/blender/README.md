@@ -15,6 +15,13 @@ Options after `--`: `--only icon_frame,hero_phone_stack` (subset), `--scale 4` (
 multiplier for review renders), `--samples 16` (EEVEE samples, default 64), `--out DIR`
 (render somewhere else), `--engine CYCLES` (CPU Cycles fallback), `--no-blend`.
 
+Then re-encode the renders for the web (8-bit PNGs at max compression, the hero as lossless
+WebP; each output is checked against its source and the script prints the size saved):
+
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --python tools/blender/optimize_web_assets.py
+```
+
 Notes on how it follows `docs/CLAYMORPHISM_REDESIGN.md` Part D:
 
 - Material, bevel (3 segments, shade smooth), key/fill area lights (400 W 5200 K top-left,
