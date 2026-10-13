@@ -1,28 +1,34 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../clay/clay_container.dart';
+import '../clay/clay_decoration.dart';
 
-/// The Mokuply mark (phone + canvas on jungle green), used in the navbars.
-/// The artwork already carries its own green background, so it is only
-/// clipped to rounded corners and given a soft shadow.
+/// The Mockuply mark (gold clay leaf on jungle green), used in the navbars.
+///
+/// The artwork carries its own green background, so it is clipped to rounded
+/// corners and set into a small clay tile so it floats like everything else.
 class BrandLogo extends StatelessWidget {
   final double size;
   final double radius;
-  final bool shadow;
 
-  const BrandLogo({super.key, this.size = 36, this.radius = 10, this.shadow = false});
+  const BrandLogo({super.key, this.size = 36, this.radius = 10});
 
-  static const String assetPath = 'assets/branding/mokuply_logo.png';
+  static const String assetPath = 'assets/branding/mockuply_logo.png';
+
+  static const double _tilePadding = 2;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        boxShadow: shadow
-            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]
-            : null,
+    return ClayContainer(
+      width: size + _tilePadding * 2,
+      height: size + _tilePadding * 2,
+      padding: const EdgeInsets.all(_tilePadding),
+      decoration: ClayDecoration(
+        color: AppColors.clay,
+        radius: radius + _tilePadding,
+        depth: 3,
+        lift: 8,
+        shadowOpacity: 0.18,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
@@ -32,7 +38,7 @@ class BrandLogo extends StatelessWidget {
           height: size,
           fit: BoxFit.cover,
           filterQuality: FilterQuality.medium,
-          semanticLabel: 'Mokuply',
+          semanticLabel: 'Mockuply',
         ),
       ),
     );

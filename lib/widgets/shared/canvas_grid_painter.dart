@@ -1,22 +1,35 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 
-/// Subtle background grid painter for the canvas viewport.
+/// Soft dot grid for the canvas viewport: 2 px dots at [AppColors.clayShade]
+/// with 0.08 alpha, every 40 px, on the `sandDeep` viewport.
 class CanvasGridPainter extends CustomPainter {
+  static const double step = 40.0;
+  static const double dotSize = 2.0;
+
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
     final paint = Paint()
-      ..color = AppColors.surface.withValues(alpha: 0.3)
-      ..strokeWidth = 1.0;
+      ..color = AppColors.clayShade.withValues(alpha: 0.08)
+      ..strokeWidth = dotSize
+      ..strokeCap = StrokeCap.round;
 
-    const double step = 32.0;
-
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    final cols = (size.width / step).ceil() + 1;
+    final rows = (size.height / step).ceil() + 1;
+    final points = Float32List(cols * rows * 2);
+    var i = 0;
+    for (var r = 0; r < rows; r++) {
+      final y = r * step;
+      for (var c = 0; c < cols; c++) {
+        points[i++] = c * step;
+        points[i++] = y;
+      }
     }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
+    canvas.drawRawPoints(ui.PointMode.points, points, paint);
   }
 
   @override

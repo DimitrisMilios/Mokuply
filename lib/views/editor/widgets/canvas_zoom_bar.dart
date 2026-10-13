@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
-import '../../../widgets/shared/glass_container.dart';
+import '../../../widgets/clay/clay.dart';
 
 /// Floating zoom bar: fit, zoom out, current zoom (click for 100%), zoom in.
 class CanvasZoomBar extends StatefulWidget {
@@ -35,6 +35,16 @@ class _CanvasZoomBarState extends State<CanvasZoomBar> {
   }
 
   @override
+  void didUpdateWidget(CanvasZoomBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.transformationController != widget.transformationController) {
+      oldWidget.transformationController.removeListener(_updateScale);
+      widget.transformationController.addListener(_updateScale);
+      _updateScale();
+    }
+  }
+
+  @override
   void dispose() {
     widget.transformationController.removeListener(_updateScale);
     super.dispose();
@@ -51,63 +61,56 @@ class _CanvasZoomBarState extends State<CanvasZoomBar> {
   Widget build(BuildContext context) {
     final percentage = (_currentScale * 100).round();
 
-    return GlassContainer(
-      opacity: 0.85,
-      blurX: 14.0,
-      blurY: 14.0,
-      borderRadius: BorderRadius.circular(AppDimensions.radiusGlass),
-      borderColor: AppColors.glassBorder,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      boxShadow: [
-        BoxShadow(
-          color: AppColors.primary.withValues(alpha: 0.12),
-          blurRadius: 20,
-          spreadRadius: 1,
-          offset: const Offset(0, 6),
-        ),
-      ],
+    return ClayPanel(
+      radius: AppDimensions.radiusClay,
+      padding: const EdgeInsets.all(6),
+      lift: 14,
+      depth: 5,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            onPressed: widget.onFit,
+          ClayIconButton(
+            icon: Icons.fit_screen_rounded,
             tooltip: 'Fit all screens (0)',
-            splashRadius: 18,
-            icon: const Icon(Icons.fit_screen_rounded, color: AppColors.primary, size: 18),
+            size: 36,
+            iconSize: 18,
+            iconColor: AppColors.primary,
+            onPressed: widget.onFit,
           ),
-          const SizedBox(width: 2),
-          const SizedBox(height: 20, child: VerticalDivider(color: AppColors.glassBorder, width: 1)),
-          const SizedBox(width: 2),
-          IconButton(
-            onPressed: widget.onZoomOut,
+          const SizedBox(width: 6),
+          ClayIconButton(
+            icon: Icons.remove_rounded,
             tooltip: 'Zoom out (−)',
-            splashRadius: 18,
-            icon: const Icon(Icons.remove_rounded, color: AppColors.primary, size: 18),
+            size: 36,
+            iconSize: 18,
+            iconColor: AppColors.primary,
+            onPressed: widget.onZoomOut,
           ),
+          const SizedBox(width: 6),
           Tooltip(
             message: 'Zoom to 100% (1)',
-            child: InkWell(
-              onTap: widget.onActualSize,
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text(
-                  '$percentage%',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
+            child: SizedBox(
+              width: 68,
+              child: DefaultTextStyle.merge(
+                style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+                child: ClayButton.neutral(
+                  label: '$percentage%',
+                  size: ClayButtonSize.compact,
+                  expand: true,
+                  textColor: AppColors.primary,
+                  onPressed: widget.onActualSize,
                 ),
               ),
             ),
           ),
-          IconButton(
-            onPressed: widget.onZoomIn,
+          const SizedBox(width: 6),
+          ClayIconButton(
+            icon: Icons.add_rounded,
             tooltip: 'Zoom in (+)',
-            splashRadius: 18,
-            icon: const Icon(Icons.add_rounded, color: AppColors.primary, size: 18),
+            size: 36,
+            iconSize: 18,
+            iconColor: AppColors.primary,
+            onPressed: widget.onZoomIn,
           ),
         ],
       ),
