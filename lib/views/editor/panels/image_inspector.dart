@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/store_specs.dart';
-import '../../../viewmodels/editor_viewmodel.dart';
+import '../../../models/canvas_image_item.dart';
+import '../../../viewmodels/editor/editor_viewmodel.dart';
 import '../../../widgets/clay/clay.dart';
+import '../../../widgets/shared/thumbnail_image.dart';
 
 /// Controls for one custom image asset.
 class ImageInspector extends StatelessWidget {
@@ -14,8 +16,10 @@ class ImageInspector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = Provider.of<EditorViewModel>(context);
-    final image = vm.customImageItems.where((i) => i.id == imageId).firstOrNull;
+    final image = context.select<EditorViewModel, CanvasImageItem?>(
+      (vm) => vm.customImageItems.where((i) => i.id == imageId).firstOrNull,
+    );
+    final vm = context.read<EditorViewModel>();
     if (image == null) {
       return const Text('This image no longer exists.', style: TextStyle(color: AppColors.textMuted));
     }
@@ -28,7 +32,10 @@ class ImageInspector extends StatelessWidget {
           height: 136,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppDimensions.radiusClaySm - 6),
-            child: Image.memory(image.imageBytes, fit: BoxFit.contain, gaplessPlayback: true),
+            child: LayoutBuilder(
+              builder: (context, box) =>
+                  ThumbnailImage(bytes: image.imageBytes, width: box.maxWidth, height: box.maxHeight, fit: BoxFit.contain),
+            ),
           ),
         ),
         const SizedBox(height: 14),

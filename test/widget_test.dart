@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocuply/viewmodels/editor_viewmodel.dart';
+import 'package:mocuply/viewmodels/editor/editor_viewmodel.dart';
 
 void main() {
   test('EditorViewModel smoke test', () {

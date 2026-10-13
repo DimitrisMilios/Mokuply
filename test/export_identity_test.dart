@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mocuply/data/templates/builtin_templates.dart';
 import 'package:mocuply/core/constants/store_specs.dart';
-import 'package:mocuply/models/project_template.dart';
 import 'package:mocuply/widgets/canvas/canvas_mockup_widget.dart';
 
 /// Renders the export widget tree for the first template's screens and writes
@@ -21,7 +21,7 @@ void main() {
     return;
   }
 
-  final template = ProjectTemplate.allTemplates.first;
+  final template = BuiltInTemplates.all.first;
   final screens = template.initialScreenshots.take(1).toList();
 
   for (final target in TargetPlatformType.values) {

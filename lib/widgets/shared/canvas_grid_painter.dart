@@ -10,6 +10,8 @@ class CanvasGridPainter extends CustomPainter {
   static const double step = 40.0;
   static const double dotSize = 2.0;
 
+  const CanvasGridPainter();
+
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;

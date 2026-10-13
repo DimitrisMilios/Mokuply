@@ -49,24 +49,24 @@ class ClayPressable extends StatefulWidget {
 }
 
 class _ClayPressableState extends State<ClayPressable> with TickerProviderStateMixin {
-  late final AnimationController _hover;
-  late final AnimationController _press;
-  late final JellyController _ownJelly;
+  // Created on the first hover or press; [_tick] relays their frames.
+  final _Tick _tick = _Tick();
+  AnimationController? _hoverController;
+  AnimationController? _pressController;
+  final JellyController _ownJelly = JellyController();
 
   JellyController get _jelly => widget.jelly ?? _ownJelly;
 
-  @override
-  void initState() {
-    super.initState();
-    _hover = AnimationController.unbounded(vsync: this, value: 0);
-    _press = AnimationController.unbounded(vsync: this, value: 0);
-    _ownJelly = JellyController();
-  }
+  AnimationController get _hover =>
+      _hoverController ??= AnimationController.unbounded(vsync: this, value: 0)..addListener(_tick.ping);
+  AnimationController get _press =>
+      _pressController ??= AnimationController.unbounded(vsync: this, value: 0)..addListener(_tick.ping);
 
   @override
   void dispose() {
-    _hover.dispose();
-    _press.dispose();
+    _hoverController?.dispose();
+    _pressController?.dispose();
+    _tick.dispose();
     super.dispose();
   }
 
@@ -80,6 +80,7 @@ class _ClayPressableState extends State<ClayPressable> with TickerProviderStateM
   }
 
   void _onExit(PointerExitEvent _) {
+    if (_hoverController == null) return;
     _hover.springTo(0, spring: _motion.snappy);
   }
 
@@ -91,7 +92,7 @@ class _ClayPressableState extends State<ClayPressable> with TickerProviderStateM
   }
 
   void _up() {
-    if (!_interactive) return;
+    if (!_interactive || _pressController == null) return;
     _press.springTo(0, spring: _motion.bouncy);
     if (widget.squash != 0) _jelly.release();
   }
@@ -99,9 +100,10 @@ class _ClayPressableState extends State<ClayPressable> with TickerProviderStateM
   @override
   Widget build(BuildContext context) {
     Widget content = AnimatedBuilder(
-      animation: Listenable.merge([_hover, _press]),
+      animation: _tick,
       child: widget.child,
-      builder: (context, child) => widget.builder(context, _hover.value, _press.value, child),
+      builder: (context, child) =>
+          widget.builder(context, _hoverController?.value ?? 0, _pressController?.value ?? 0, child),
     );
 
     if (widget.squash != 0) {
@@ -128,4 +130,9 @@ class _ClayPressableState extends State<ClayPressable> with TickerProviderStateM
       ),
     );
   }
+}
+
+/// Relays controller frames to the builder without merging listenables.
+class _Tick extends ChangeNotifier {
+  void ping() => notifyListeners();
 }

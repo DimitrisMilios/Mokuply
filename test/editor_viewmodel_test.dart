@@ -5,8 +5,8 @@ import 'package:mocuply/core/constants/store_specs.dart';
 import 'package:mocuply/core/layout/canvas_geometry.dart';
 import 'package:mocuply/models/canvas_device_item.dart';
 import 'package:mocuply/models/template_data.dart';
-import 'package:mocuply/viewmodels/editor_viewmodel.dart';
-import 'package:mocuply/widgets/canvas/device_frame_widget.dart';
+import 'package:mocuply/viewmodels/editor/editor_viewmodel.dart';
+import 'package:mocuply/widgets/canvas/device_frame/device_frame_widget.dart';
 
 void main() {
   _canvasUxTests();

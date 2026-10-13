@@ -1,11 +1,11 @@
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
-import '../../../viewmodels/editor_viewmodel.dart';
+import '../../../viewmodels/library_viewmodel.dart';
 import '../../../widgets/clay/clay.dart';
+import 'hero_render.dart';
 
 /// Hero for HomeView: headline, subtitle and the two calls to action on the
 /// left, the Blender hero render on the right. Below 960 px the render drops
@@ -105,7 +105,7 @@ class _HeroCopy extends StatelessWidget {
               icon: Icons.arrow_forward_rounded,
               size: ClayButtonSize.large,
               ripple: true,
-              onPressed: () => context.read<EditorViewModel>().openEditorWithNewProject(),
+              onPressed: () => context.read<LibraryViewModel>().startNewProject(),
             ),
             ClayButton.text(
               label: 'Browse templates',
@@ -119,173 +119,3 @@ class _HeroCopy extends StatelessWidget {
   }
 }
 
-/// The Blender hero render (`assets/clay/hero_phone_stack.png`, 720×560),
-/// scaled down with the available width.
-///
-/// Idle: a slow 4 s float of 6 px plus a 1.5° rotate loop. Pointer near:
-/// tilts up to 4° toward the pointer. Click: jelly squash. All of it is off
-/// when reduced motion is on. Falls back to a labelled clay panel while the
-/// render is still being produced.
-class HeroRender extends StatefulWidget {
-  const HeroRender({super.key});
-
-  static const String assetPath = 'assets/clay/hero_phone_stack.png';
-  static const double renderWidth = 720;
-  static const double renderHeight = 560;
-
-  @override
-  State<HeroRender> createState() => _HeroRenderState();
-}
-
-class _HeroRenderState extends State<HeroRender> with TickerProviderStateMixin {
-  static const double _floatPx = 6;
-  static const double _floatRad = 1.5 * math.pi / 180;
-  static const double _tiltRad = 4 * math.pi / 180;
-
-  late final AnimationController _float;
-  late final AnimationController _tiltX;
-  late final AnimationController _tiltY;
-  final JellyController _jelly = JellyController();
-  bool _motionEnabled = true;
-
-  @override
-  void initState() {
-    super.initState();
-    // A loop, not a control, so a linear repeat with a sine is fine here.
-    _float = AnimationController(vsync: this, duration: const Duration(seconds: 4));
-    _tiltX = AnimationController.unbounded(vsync: this, value: 0);
-    _tiltY = AnimationController.unbounded(vsync: this, value: 0);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final enabled = ClayMotion.of(context).enabled;
-    if (enabled != _motionEnabled || (enabled && !_float.isAnimating)) {
-      _motionEnabled = enabled;
-      if (enabled) {
-        _float.repeat();
-      } else {
-        _float.stop();
-        _float.value = 0;
-        _tiltX.value = 0;
-        _tiltY.value = 0;
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _float.dispose();
-    _tiltX.dispose();
-    _tiltY.dispose();
-    super.dispose();
-  }
-
-  void _onHover(PointerEvent event, Size size) {
-    if (!_motionEnabled || size.isEmpty) return;
-    final nx = ((event.localPosition.dx / size.width) * 2 - 1).clamp(-1.0, 1.0);
-    final ny = ((event.localPosition.dy / size.height) * 2 - 1).clamp(-1.0, 1.0);
-    final spring = ClayMotion.of(context).gentle;
-    // Tilt toward the pointer: pointer right → rotate about Y so the right
-    // edge dips; pointer down → rotate about X so the bottom edge dips.
-    _tiltY.springTo(nx * _tiltRad, spring: spring);
-    _tiltX.springTo(-ny * _tiltRad, spring: spring);
-  }
-
-  void _onExit() {
-    final spring = ClayMotion.of(context).gentle;
-    _tiltX.springTo(0, spring: spring);
-    _tiltY.springTo(0, spring: spring);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    const aspect = HeroRender.renderWidth / HeroRender.renderHeight;
-
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: HeroRender.renderWidth),
-      child: AspectRatio(
-        aspectRatio: aspect,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final size = constraints.biggest;
-            return MouseRegion(
-              onHover: (e) => _onHover(e, size),
-              onExit: (_) => _onExit(),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _jelly.tap(squash: 0.06),
-                child: AnimatedBuilder(
-                  animation: Listenable.merge([_float, _tiltX, _tiltY]),
-                  builder: (context, child) {
-                    final phase = _float.value * 2 * math.pi;
-                    final dy = _motionEnabled ? _floatPx * math.sin(phase) : 0.0;
-                    final rz = _motionEnabled ? _floatRad * math.sin(phase + math.pi / 3) : 0.0;
-                    final m = Matrix4.identity()
-                      ..setEntry(3, 2, 0.0012)
-                      ..translateByDouble(0.0, dy, 0.0, 1.0)
-                      ..rotateX(_tiltX.value)
-                      ..rotateY(_tiltY.value)
-                      ..rotateZ(rz);
-                    return Transform(
-                      transform: m,
-                      alignment: Alignment.center,
-                      child: child,
-                    );
-                  },
-                  child: JellyTransform(
-                    controller: _jelly,
-                    child: RepaintBoundary(
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: SizedBox(
-                          width: HeroRender.renderWidth,
-                          height: HeroRender.renderHeight,
-                          child: Image.asset(
-                            HeroRender.assetPath,
-                            width: HeroRender.renderWidth,
-                            height: HeroRender.renderHeight,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.medium,
-                            semanticLabel: 'A stack of phones showing store screenshots',
-                            errorBuilder: (_, _, _) => const _HeroRenderPlaceholder(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-/// Shown while `hero_phone_stack.png` has not landed yet: a clay panel of
-/// the same aspect with a muted label.
-class _HeroRenderPlaceholder extends StatelessWidget {
-  const _HeroRenderPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const ClayPanel(
-      width: HeroRender.renderWidth,
-      height: HeroRender.renderHeight,
-      radius: AppDimensions.radiusClayXl,
-      alignment: Alignment.center,
-      child: Text(
-        'hero render',
-        style: TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 22,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.3,
-        ),
-      ),
-    );
-  }
-}
