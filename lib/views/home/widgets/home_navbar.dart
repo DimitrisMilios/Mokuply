@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
-import '../../../widgets/shared/glass_container.dart';
+import '../../../widgets/clay/clay.dart';
 import '../../../widgets/shared/brand_logo.dart';
 
-/// Floating sticky top header navigation bar for HomeView.
+/// Floating sticky top header for HomeView: a clay panel with the logo tile,
+/// the wordmark and a gold "Start project" button.
 class HomeNavbar extends StatelessWidget {
   const HomeNavbar({super.key});
 
@@ -14,87 +15,47 @@ class HomeNavbar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 16.0, left: 24.0, right: 24.0, bottom: 8.0),
-      child: GlassContainer(
+      child: ClayPanel(
         height: AppDimensions.navbarHeight,
-        opacity: 0.8,
-        blurX: 16,
-        blurY: 16,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusGlassLg),
-        borderColor: AppColors.glassBorder,
-        boxShadow: [
-          BoxShadow(color: AppColors.glassShadow, blurRadius: 24, spreadRadius: 0, offset: const Offset(0, 8)),
-        ],
+        radius: AppDimensions.radiusClayXl,
         padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingXxl),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final bool showBadge = constraints.maxWidth >= 720;
             final bool showStartLabel = constraints.maxWidth >= 480;
+            final bool showWordmark = constraints.maxWidth >= 360;
+            void start() => context.read<EditorViewModel>().openEditorWithNewProject();
+
             return Row(
               children: [
-                Row(
-                  children: [
-                    const BrandLogo(size: 42, radius: AppDimensions.radiusMd, shadow: true),
-                    const SizedBox(width: AppDimensions.spacingMd),
-                    const Text(
-                      'Mocuply',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: AppDimensions.fontXl,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
+                const BrandLogo(size: 40, radius: AppDimensions.radiusMd),
+                if (showWordmark) ...[
+                  const SizedBox(width: AppDimensions.spacingMd),
+                  const Text(
+                    'Mockuply',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: AppDimensions.fontXl,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.6,
                     ),
-                    if (showBadge) ...[
-                      const SizedBox(width: AppDimensions.spacingMd),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: AppColors.badgeBg,
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
-                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                        ),
-                        child: const Text(
-                          '100% Free & Client-Side',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: AppDimensions.fontSm,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                ],
                 const Spacer(),
-                Builder(
-                  builder: (context) {
-                    final style = ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.textOnPrimary,
-                      padding: EdgeInsets.symmetric(horizontal: showStartLabel ? 24 : 14, vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
-                      elevation: 3,
-                      shadowColor: AppColors.primary.withValues(alpha: 0.4),
-                    );
-                    void start() => context.read<EditorViewModel>().openEditorWithNewProject();
-                    const icon = Icon(Icons.rocket_launch_rounded, size: 18);
-                    if (!showStartLabel) {
-                      return Tooltip(
-                        message: 'Start Project',
-                        child: ElevatedButton(onPressed: start, style: style, child: icon),
-                      );
-                    }
-                    return ElevatedButton.icon(
-                      onPressed: start,
-                      style: style,
-                      icon: icon,
-                      label: const Text(
-                        'Start Project',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppDimensions.fontMd),
-                      ),
-                    );
-                  },
-                ),
+                if (showStartLabel)
+                  ClayButton.gold(
+                    label: 'Start project',
+                    icon: Icons.rocket_launch_rounded,
+                    onPressed: start,
+                  )
+                else
+                  ClayIconButton(
+                    icon: Icons.rocket_launch_rounded,
+                    tooltip: 'Start project',
+                    color: AppColors.gold,
+                    size: 44,
+                    radius: 22,
+                    onPressed: start,
+                  ),
               ],
             );
           },

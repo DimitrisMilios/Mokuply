@@ -3,350 +3,395 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/store_specs.dart';
-import '../../../viewmodels/editor_viewmodel.dart';
-import '../../../widgets/shared/glass_container.dart';
 import '../../../services/css_spinner.dart';
+import '../../../viewmodels/editor_viewmodel.dart';
+import '../../../widgets/clay/clay.dart';
 
-class ExportModalDialog extends StatelessWidget {
+/// Which of the three export options is running or just finished.
+enum _ExportOption { both, appStore, googlePlay }
+
+class ExportModalDialog extends StatefulWidget {
   const ExportModalDialog({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showDialog(
+    return showClayDialog<void>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
       builder: (ctx) => const ExportModalDialog(),
     );
   }
 
   @override
+  State<ExportModalDialog> createState() => _ExportModalDialogState();
+}
+
+class _ExportModalDialogState extends State<ExportModalDialog> {
+  /// The option whose button is in the busy state.
+  _ExportOption? _busy;
+
+  /// The option whose button shows the check for a moment before the dialog closes.
+  _ExportOption? _done;
+
+  /// How long the "Done" check stays on the button before the dialog pops.
+  static const Duration _doneHold = Duration(milliseconds: 650);
+
+  Future<void> _run(
+    _ExportOption option,
+    EditorViewModel vm,
+    Future<void> Function() export,
+    String successMessage,
+    String errorMessage,
+  ) async {
+    setState(() => _busy = option);
+    try {
+      await export();
+    } catch (e) {
+      debugPrint('ExportModalDialog export error: $e');
+      if (!mounted) return;
+      setState(() => _busy = null);
+      ClayToast.show(context, errorMessage, error: true);
+      return;
+    }
+    if (!mounted) return;
+    if (vm.isExporting) {
+      setState(() => _busy = null);
+      return;
+    }
+    // Label crossfades to a check, then the dialog closes and the toast rises.
+    setState(() {
+      _busy = null;
+      _done = option;
+    });
+    await Future<void>.delayed(_doneHold);
+    if (!mounted) return;
+    // The toast lives in the root overlay, so showing it before the pop is safe
+    // and keeps it visible while the dialog fades out.
+    ClayToast.show(context, successMessage);
+    Navigator.of(context).pop();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final vm = context.watch<EditorViewModel>();
+    final busyLabel = vm.exportingTotalSteps > 0
+        ? '${vm.exportingProgressIndex} of ${vm.exportingTotalSteps}'
+        : 'Working';
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      child: GlassContainer(
-        width: 640,
-        opacity: 0.95,
-        blurX: 24,
-        blurY: 24,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        borderColor: AppColors.glassBorder,
-        padding: const EdgeInsets.all(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 40,
-            spreadRadius: 4,
-            offset: const Offset(0, 16),
+    final cards = <Widget>[
+      _ExportOptionCard(
+        emphasised: true,
+        asset: 'assets/clay/export_both.png',
+        fallbackIcon: Icons.inventory_2_rounded,
+        knobColor: AppColors.butter,
+        title: 'Both stores',
+        description: 'One zip with an App Store folder and a Google Play folder.',
+        button: _button(
+          option: _ExportOption.both,
+          vm: vm,
+          primary: true,
+          busyLabel: busyLabel,
+          onPressed: () => _run(
+            _ExportOption.both,
+            vm,
+            () => vm.exportBothPlatformsPack(context: context),
+            'Your zip is downloading.',
+            'The zip could not be made.',
           ),
-        ],
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header Row
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.file_download_outlined, color: AppColors.primary, size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Download Store Screenshots',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Select store dimensions for your pixel-perfect PNG export package.',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: vm.isExporting ? null : () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
-                  tooltip: 'Close',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Live Export Progress Overlay
-            if (vm.isExporting) ...[
-              Container(
-                key: const ValueKey('export_progress_card'),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const SmoothSpinnerWidget(),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            vm.exportingStatusText.isNotEmpty
-                                ? vm.exportingStatusText
-                                : 'Processing Store Package...',
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    TweenAnimationBuilder<double>(
-                      tween: Tween<double>(
-                        begin: 0.0,
-                        end: vm.exportingTotalSteps > 0
-                            ? (vm.exportingProgressIndex / vm.exportingTotalSteps).clamp(0.0, 1.0)
-                            : 0.0,
-                      ),
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, animValue, child) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: LinearProgressIndicator(
-                            key: const ValueKey('export_linear_progress'),
-                            value: animValue,
-                            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                            color: AppColors.primary,
-                            minHeight: 6,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // 1. BOTH STORES BUNDLE (RECOMMENDED)
-            _buildExportOptionCard(
-              context: context,
-              vm: vm,
-              icon: Icons.folder_zip_rounded,
-              title: 'Download for Both Stores (ZIP Bundle)',
-              badgeText: 'Apple + Google · ${TargetPlatformType.appStore.dimensionsLabel}',
-              description: 'Master ZIP package containing organized folders for both App Store Connect & Google Play Console.',
-              isRecommended: true,
-              buttonLabel: 'Download Complete Bundle ZIP',
-              onTap: () async {
-                await vm.exportBothPlatformsPack(context: context);
-                if (context.mounted && !vm.isExporting) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: AppColors.primary,
-                      content: Row(
-                        children: const [
-                          Icon(Icons.check_circle_rounded, color: Colors.white),
-                          SizedBox(width: 12),
-                          Text(
-                            'Downloading Mokuply_StoreScreenshots_AllPlatforms.zip to Downloads folder!',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
-
-            const SizedBox(height: 14),
-
-            // 2. APPLE APP STORE PACK
-            _buildExportOptionCard(
-              context: context,
-              vm: vm,
-              icon: Icons.apple,
-              title: 'Apple App Store Only',
-              badgeText: '${TargetPlatformType.appStore.dimensionsLabel} px',
-              description: 'Formatted for the App Store Connect 6.9" display specification.',
-              isRecommended: false,
-              buttonLabel: 'Download Apple ZIP',
-              onTap: () async {
-                await vm.exportPlatformPack(TargetPlatformType.appStore, context: context);
-                if (context.mounted && !vm.isExporting) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: AppColors.primary,
-                      content: Row(
-                        children: const [
-                          Icon(Icons.check_circle_rounded, color: Colors.white),
-                          SizedBox(width: 12),
-                          Text(
-                            'Downloading Apple App Store ZIP package to Downloads folder!',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
-
-            const SizedBox(height: 14),
-
-            // 3. GOOGLE PLAY STORE PACK
-            _buildExportOptionCard(
-              context: context,
-              vm: vm,
-              icon: Icons.android,
-              title: 'Google Play Store Only',
-              badgeText: '${TargetPlatformType.googlePlay.dimensionsLabel} px',
-              description: 'Same 1320×2868 canvas as Apple with the Galaxy frame, ready for the Google Play Console.',
-              isRecommended: false,
-              buttonLabel: 'Download Google ZIP',
-              onTap: () async {
-                await vm.exportPlatformPack(TargetPlatformType.googlePlay, context: context);
-                if (context.mounted && !vm.isExporting) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: AppColors.primary,
-                      content: Row(
-                        children: const [
-                          Icon(Icons.check_circle_rounded, color: Colors.white),
-                          SizedBox(width: 12),
-                          Text(
-                            'Downloading Google Play Store ZIP package to Downloads folder!',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
         ),
+      ),
+      _ExportOptionCard(
+        asset: 'assets/clay/export_apple.png',
+        fallbackIcon: Icons.apple,
+        knobColor: AppColors.mint,
+        title: 'App Store',
+        description: '${TargetPlatformType.appStore.dimensionsLabel} PNGs for the 6.9" slot.',
+        button: _button(
+          option: _ExportOption.appStore,
+          vm: vm,
+          primary: false,
+          busyLabel: busyLabel,
+          onPressed: () => _run(
+            _ExportOption.appStore,
+            vm,
+            () => vm.exportPlatformPack(TargetPlatformType.appStore, context: context),
+            'Your App Store zip is downloading.',
+            'The App Store zip could not be made.',
+          ),
+        ),
+      ),
+      _ExportOptionCard(
+        asset: 'assets/clay/export_play.png',
+        fallbackIcon: Icons.android,
+        knobColor: AppColors.clay,
+        title: 'Google Play',
+        description: 'Same size, Galaxy frame.',
+        button: _button(
+          option: _ExportOption.googlePlay,
+          vm: vm,
+          primary: false,
+          busyLabel: busyLabel,
+          onPressed: () => _run(
+            _ExportOption.googlePlay,
+            vm,
+            () => vm.exportPlatformPack(TargetPlatformType.googlePlay, context: context),
+            'Your Google Play zip is downloading.',
+            'The Google Play zip could not be made.',
+          ),
+        ),
+      ),
+    ];
+
+    return ClayDialog(
+      width: 640,
+      title: 'Download',
+      subtitle: 'Pick a store, or get both in one zip.',
+      headerIcon: const Icon(Icons.download_rounded, color: AppColors.primary, size: 24),
+      showClose: !vm.isExporting,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (vm.isExporting) ...[
+            _ExportProgressWell(
+              key: const ValueKey('export_progress_card'),
+              statusText: vm.exportingStatusText.isNotEmpty ? vm.exportingStatusText : 'Working on your screenshots',
+              progress: vm.exportingTotalSteps > 0
+                  ? (vm.exportingProgressIndex / vm.exportingTotalSteps).clamp(0.0, 1.0)
+                  : 0.0,
+            ),
+            const SizedBox(height: 20),
+          ],
+          for (var i = 0; i < cards.length; i++) ...[
+            if (i > 0) const SizedBox(height: 14),
+            ClayStagger(index: i, child: cards[i]),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildExportOptionCard({
-    required BuildContext context,
+  Widget _button({
+    required _ExportOption option,
     required EditorViewModel vm,
-    required IconData icon,
-    required String title,
-    required String badgeText,
-    required String description,
-    required bool isRecommended,
-    required String buttonLabel,
-    required VoidCallback onTap,
+    required bool primary,
+    required String busyLabel,
+    required VoidCallback onPressed,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isRecommended
-            ? AppColors.primary.withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        border: Border.all(
-          color: isRecommended ? AppColors.primary : AppColors.glassBorder,
-          width: isRecommended ? 1.8 : 1.0,
-        ),
+    final isBusy = vm.isExporting && _busy == option;
+    final isDone = _done == option;
+    final enabled = !vm.isExporting && _done == null;
+
+    final Widget button;
+    if (isDone) {
+      button = ClayButton.primary(
+        key: const ValueKey('done'),
+        label: 'Done',
+        icon: Icons.check_rounded,
+        onPressed: null,
+      );
+    } else if (primary) {
+      button = ClayButton.primary(
+        key: const ValueKey('download'),
+        label: 'Download',
+        busy: isBusy,
+        busyLabel: busyLabel,
+        onPressed: enabled ? onPressed : null,
+      );
+    } else {
+      button = ClayButton.neutral(
+        key: const ValueKey('download'),
+        label: 'Download',
+        busy: isBusy,
+        busyLabel: busyLabel,
+        onPressed: enabled ? onPressed : null,
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: ClayDurations.crossfade,
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: button,
+    );
+  }
+}
+
+/// Sunken well with the status line, the smooth spinner and a spring-filled bar.
+class _ExportProgressWell extends StatelessWidget {
+  final String statusText;
+  final double progress;
+
+  const _ExportProgressWell({super.key, required this.statusText, required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClayWell(
+      padding: const EdgeInsets.all(18),
+      radius: AppDimensions.radiusClay,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              const SmoothSpinnerWidget(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  statusText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: AppDimensions.fontMd,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _ClayProgressBar(progress: progress),
+        ],
       ),
+    );
+  }
+}
+
+/// A sunken track with a primary gradient fill whose width follows the
+/// progress with the gentle spring.
+class _ClayProgressBar extends StatefulWidget {
+  final double progress;
+
+  const _ClayProgressBar({required this.progress});
+
+  @override
+  State<_ClayProgressBar> createState() => _ClayProgressBarState();
+}
+
+class _ClayProgressBarState extends State<_ClayProgressBar> with SingleTickerProviderStateMixin {
+  static const double _trackH = 12;
+
+  late final AnimationController _fill;
+
+  @override
+  void initState() {
+    super.initState();
+    _fill = AnimationController.unbounded(vsync: this, value: widget.progress);
+  }
+
+  @override
+  void didUpdateWidget(_ClayProgressBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.progress != widget.progress) {
+      _fill.springTo(widget.progress, spring: ClayMotion.of(context).gentle);
+    }
+  }
+
+  @override
+  void dispose() {
+    _fill.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _fill,
+      builder: (context, _) {
+        final t = _fill.value.clamp(0.0, 1.0);
+        return Container(
+          key: const ValueKey('export_linear_progress'),
+          height: _trackH,
+          decoration: const ClayDecoration.well(radius: _trackH / 2, depth: 3),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FractionallySizedBox(
+              widthFactor: t,
+              heightFactor: 1,
+              child: Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(_trackH / 2),
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primaryLight, AppColors.primary],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// One export option: a round clay knob with the Blender render, title,
+/// description and the download button.
+class _ExportOptionCard extends StatelessWidget {
+  final bool emphasised;
+  final String asset;
+  final IconData fallbackIcon;
+  final Color knobColor;
+  final String title;
+  final String description;
+  final Widget button;
+
+  const _ExportOptionCard({
+    this.emphasised = false,
+    required this.asset,
+    required this.fallbackIcon,
+    required this.knobColor,
+    required this.title,
+    required this.description,
+    required this.button,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClayCard(
+      emphasised: emphasised,
+      padding: EdgeInsets.all(emphasised ? 24 : 18),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isRecommended ? AppColors.primary : Colors.black.withValues(alpha: 0.06),
-              shape: BoxShape.circle,
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: ClayDecoration(
+              color: knobColor,
+              radius: 24,
+              depth: 4,
+              lift: 8,
+              shadowOpacity: 0.16,
+              edgeOpacity: 0.10,
             ),
-            child: Icon(
-              icon,
-              color: isRecommended ? Colors.white : AppColors.textPrimary,
-              size: 22,
+            child: OverflowBox(
+              maxWidth: 56,
+              maxHeight: 56,
+              child: Image.asset(
+                asset,
+                width: 56,
+                height: 56,
+                filterQuality: FilterQuality.medium,
+                errorBuilder: (_, _, _) => Icon(fallbackIcon, size: 22, color: AppColors.textPrimary),
+              ),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (isRecommended)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Text(
-                          'RECOMMENDED',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.badgeBg,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    badgeText,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: emphasised ? 17 : AppDimensions.fontLg,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -354,27 +399,16 @@ class ExportModalDialog extends StatelessWidget {
                   description,
                   style: const TextStyle(
                     color: AppColors.textMuted,
-                    fontSize: 12,
+                    fontSize: AppDimensions.fontBody,
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          ElevatedButton(
-            onPressed: vm.isExporting ? null : onTap,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isRecommended ? AppColors.primary : Colors.black,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              elevation: 0,
-            ),
-            child: Text(
-              buttonLabel,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
+          const SizedBox(width: 16),
+          button,
         ],
       ),
     );

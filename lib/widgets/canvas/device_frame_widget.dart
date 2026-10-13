@@ -22,6 +22,11 @@ class DeviceFrameWidget extends StatelessWidget {
   /// exports leave it null to decode at native resolution.
   final int? decodeWidth;
 
+  /// True on the editor canvas: the "no screenshot yet" placeholder uses the
+  /// clay empty-state. False (the default, and what the export capture
+  /// passes) keeps the placeholder's exported pixels exactly as before.
+  final bool previewPlaceholder;
+
   const DeviceFrameWidget({
     super.key,
     required this.frameStyle,
@@ -30,6 +35,7 @@ class DeviceFrameWidget extends StatelessWidget {
     required this.platform,
     required this.scale,
     this.decodeWidth,
+    this.previewPlaceholder = false,
   });
 
   /// Phone body width in design pixels (before [scale]).
@@ -65,6 +71,7 @@ class DeviceFrameWidget extends StatelessWidget {
             height: deviceHeight,
             scale: scale,
             platform: platform,
+            preview: previewPlaceholder,
           );
 
     final Widget body;
@@ -109,21 +116,95 @@ class DeviceFrameWidget extends StatelessWidget {
 }
 
 /// Placeholder shown inside a frame until a screenshot is uploaded.
+///
+/// Two renders: [preview] true is the clay empty-state on the editor canvas;
+/// [preview] false is the exported render, pinned to the pre-redesign
+/// pixels (colours are literals, not tokens) so exports stay byte-identical.
 class _ScreenshotPlaceholder extends StatelessWidget {
   final double width;
   final double height;
   final double scale;
   final TargetPlatformType platform;
+  final bool preview;
 
   const _ScreenshotPlaceholder({
     required this.width,
     required this.height,
     required this.scale,
     required this.platform,
+    required this.preview,
   });
+
+  /// Pre-redesign `AppColors.primary` / `textPrimary` and `textMuted`.
+  static const Color _exportInk = Color(0xFF1A4731);
+  static const Color _exportMuted = Color(0xFF5A7B6C);
 
   @override
   Widget build(BuildContext context) {
+    if (!preview) return _buildExport();
+
+    final IconData icon = platform == TargetPlatformType.appStore
+        ? Icons.phone_iphone_rounded
+        : Icons.phone_android_rounded;
+
+    return Container(
+      width: width,
+      height: height,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.white, AppColors.clayDeep],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Blender clay render; the circle is the fallback until it lands.
+          Image.asset(
+            'assets/clay/empty_frame.png',
+            width: 440 * scale,
+            height: 440 * scale,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, _, _) => Container(
+              width: 440 * scale,
+              height: 440 * scale,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: AppColors.mint, shape: BoxShape.circle),
+              child: Icon(icon, size: 96 * scale, color: AppColors.primary),
+            ),
+          ),
+          SizedBox(height: 40 * scale),
+          Text(
+            'Add a screenshot',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 52 * scale,
+              fontWeight: FontWeight.w800,
+              decoration: TextDecoration.none,
+            ),
+          ),
+          SizedBox(height: 16 * scale),
+          Text(
+            'Select the frame, then use\nShot in the rail.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 34 * scale,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
+              decoration: TextDecoration.none,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The exported placeholder. Do not restyle: it is part of the PNG when a
+  /// device has no screenshot for either store.
+  Widget _buildExport() {
     return Container(
       width: width,
       height: height,
@@ -143,14 +224,14 @@ class _ScreenshotPlaceholder extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(40 * scale),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: _exportInk.withValues(alpha: 0.1),
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 3 * scale),
+              border: Border.all(color: _exportInk.withValues(alpha: 0.2), width: 3 * scale),
             ),
             child: Icon(
               platform == TargetPlatformType.appStore ? Icons.phone_iphone_rounded : Icons.phone_android_rounded,
               size: 140 * scale,
-              color: AppColors.primary,
+              color: _exportInk,
             ),
           ),
           SizedBox(height: 40 * scale),
@@ -158,7 +239,7 @@ class _ScreenshotPlaceholder extends StatelessWidget {
             'Upload ${platform.screenshotLabel} screenshot',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: _exportInk,
               fontSize: 52 * scale,
               fontWeight: FontWeight.bold,
               decoration: TextDecoration.none,
@@ -169,7 +250,7 @@ class _ScreenshotPlaceholder extends StatelessWidget {
             'Select this frame, then use\n"App Screenshots" in the sidebar',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.textMuted,
+              color: _exportMuted,
               fontSize: 34 * scale,
               fontWeight: FontWeight.w500,
               height: 1.3,
@@ -235,7 +316,7 @@ class _PhoneSkin {
       _SideButtonSpec(isLeft: true, top: 680, height: 200), // Volume down
       _SideButtonSpec(isLeft: false, top: 560, height: 250), // Power
     ],
-    glowColor: AppColors.primary,
+    glowColor: AppColors.exportGlow,
     speakerTop: 8,
     speakerWidth: 60,
     speakerHeight: 3.5,
@@ -585,7 +666,7 @@ class _MinimalDarkFrame extends StatelessWidget {
     final List<BoxShadow> shadows = hasShadow
         ? [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.25),
+              color: AppColors.exportGlow.withValues(alpha: 0.25),
               blurRadius: 36 * scale,
               spreadRadius: 4 * scale,
               offset: Offset(0, 18 * scale),

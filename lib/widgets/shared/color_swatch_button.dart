@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_dimensions.dart';
-import 'glass_container.dart';
+import '../clay/clay.dart';
 
-/// Tappable color swatch button and glass color picker dialog.
+/// A round clay knob showing [color]. Tapping it squashes the knob and opens
+/// a clay colour picker that grows out of the knob.
+///
+/// The picker updates live through [onColorChanged] (so the canvas previews
+/// the colour); Cancel puts the original colour back, Apply keeps it.
 class ColorSwatchButton extends StatelessWidget {
   final Color color;
   final ValueChanged<Color> onColorChanged;
@@ -19,93 +22,96 @@ class ColorSwatchButton extends StatelessWidget {
     this.showIcon = false,
   });
 
+  /// Lighter / darker versions of [c] for the inner highlight and shade so the
+  /// knob reads as clay made of that colour.
+  static Color _lighter(Color c) {
+    final hsl = HSLColor.fromColor(c);
+    return hsl
+        .withLightness((hsl.lightness + 0.28).clamp(0.0, 1.0))
+        .withSaturation((hsl.saturation * 0.85).clamp(0.0, 1.0))
+        .toColor();
+  }
+
+  static Color _darker(Color c) {
+    final hsl = HSLColor.fromColor(c);
+    return hsl.withLightness((hsl.lightness - 0.28).clamp(0.0, 1.0)).toColor();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => _openPicker(context),
-      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+    final iconColor = color.computeLuminance() > 0.5 ? AppColors.textPrimary : Colors.white;
+    return Tooltip(
+      message: 'Colour',
+      child: ClayPressable(
+        onTap: () => _openPicker(context),
+        builder: (context, hover, press, _) {
+          final h = hover.clamp(0.0, 1.0);
+          return Container(
+            width: size,
+            height: size,
+            alignment: Alignment.center,
+            decoration: ClayDecoration(
+              color: color,
+              radius: size / 2,
+              depth: (size * 0.14).clamp(3.0, 6.0),
+              lift: 6 + 4 * h,
+              pressed: press.clamp(0.0, 1.0),
+              shadowOpacity: 0.24,
+              edgeOpacity: 0.12,
+              highlightColor: _lighter(color),
+              highlightOpacity: 0.85,
+              shadeColor: _darker(color),
+              shadeOpacity: 0.55,
+              shadowColor: _darker(color),
             ),
-          ],
-        ),
-        child: showIcon
-            ? Icon(Icons.colorize_rounded, size: 16, color: color.computeLuminance() > 0.5 ? AppColors.primary : Colors.white)
-            : null,
+            child: showIcon ? Icon(Icons.colorize_rounded, size: size * 0.5, color: iconColor) : null,
+          );
+        },
       ),
     );
   }
 
-  void _openPicker(BuildContext context) {
-    showDialog(
+  Future<void> _openPicker(BuildContext context) async {
+    final original = color;
+    var touched = false;
+    Offset? origin;
+    final box = context.findRenderObject();
+    if (box is RenderBox && box.hasSize) {
+      origin = box.localToGlobal(box.size.center(Offset.zero));
+    }
+
+    final applied = await showClayDialog<bool>(
       context: context,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-        child: GlassContainer(
-          width: 320,
-          opacity: 0.85,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusGlassLg),
-          borderColor: AppColors.glassBorder,
-          padding: const EdgeInsets.all(AppDimensions.spacingXxl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Pick Color',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: AppDimensions.fontXl,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(dialogCtx).pop(),
-                    icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppDimensions.spacingLg),
-              ColorPicker(
-                pickerColor: color,
-                onColorChanged: onColorChanged,
-                pickerAreaHeightPercent: 0.7,
-                enableAlpha: false,
-                labelTypes: const [],
-                pickerAreaBorderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              ),
-              const SizedBox(height: AppDimensions.spacingLg),
-              ElevatedButton(
-                onPressed: () => Navigator.of(dialogCtx).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textOnPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                  ),
-                  elevation: 2,
-                ),
-                child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
+      origin: origin,
+      builder: (dialogCtx) => ClayDialog(
+        title: 'Colour',
+        width: 340,
+        padding: const EdgeInsets.all(24),
+        actions: [
+          ClayButton.text(label: 'Cancel', onPressed: () => Navigator.of(dialogCtx).pop(false)),
+          ClayButton.primary(label: 'Apply', onPressed: () => Navigator.of(dialogCtx).pop(true)),
+        ],
+        child: ClayWell(
+          padding: const EdgeInsets.all(6),
+          radius: 20,
+          child: ColorPicker(
+            pickerColor: original,
+            onColorChanged: (c) {
+              touched = true;
+              onColorChanged(c);
+            },
+            colorPickerWidth: 280,
+            portraitOnly: true,
+            pickerAreaHeightPercent: 0.7,
+            enableAlpha: false,
+            labelTypes: const [],
+            pickerAreaBorderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
     );
+
+    // Dismissed or cancelled after a live change: put the colour back.
+    if (applied != true && touched) onColorChanged(original);
   }
 }

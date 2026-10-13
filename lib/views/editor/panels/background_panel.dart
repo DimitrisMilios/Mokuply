@@ -4,7 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/store_specs.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
-
+import '../../../widgets/clay/clay.dart';
 import '../../../widgets/shared/color_swatch_button.dart';
 
 /// Background image, preset gradients and solid colour for the active screen.
@@ -14,151 +14,244 @@ class BackgroundSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = Provider.of<EditorViewModel>(context);
-    final hasBgImage = vm.customBackgroundImageBytes != null;
+    final bgBytes = vm.customBackgroundImageBytes;
+    final hasBgImage = bgBytes != null;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // --- Custom Background Image Section ---
+        // --- Background image ---
+        const ClayLabel('Background image'),
+        const SizedBox(height: 4),
         const Text(
-          'Background Image',
-          style: TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
+          'One image per screen, shared by both stores.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.3),
         ),
-        const SizedBox(height: AppDimensions.spacingSm),
-        ElevatedButton.icon(
-          onPressed: () => vm.pickCustomBackgroundImage(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: hasBgImage ? AppColors.primary.withValues(alpha: 0.15) : AppColors.primary,
-            foregroundColor: hasBgImage ? AppColors.primary : AppColors.textOnPrimary,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              side: hasBgImage ? const BorderSide(color: AppColors.primary, width: 1.5) : BorderSide.none,
-            ),
-            elevation: hasBgImage ? 0 : 2,
-          ),
-          icon: Icon(hasBgImage ? Icons.image_rounded : Icons.add_photo_alternate_rounded, size: 20),
-          label: Text(
-            hasBgImage ? 'Change BG Image' : 'Upload Background Image',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          ),
-        ),
+        const SizedBox(height: 10),
         if (hasBgImage) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-              border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
-            ),
+          ClayWell(
+            padding: const EdgeInsets.all(8),
             child: Row(
               children: [
-                const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 16),
-                const SizedBox(width: 8),
-                const Text(
-                  'Image Active',
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusClaySm - 6),
+                  child: SizedBox(
+                    width: 84,
+                    height: 56,
+                    child: Image.memory(bgBytes, fit: BoxFit.cover, gaplessPlayback: true),
+                  ),
                 ),
-                const Spacer(),
-                TextButton(
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ClayButton.neutral(
+                    label: 'Change',
+                    icon: Icons.image_rounded,
+                    size: ClayButtonSize.compact,
+                    expand: true,
+                    onPressed: () => vm.pickCustomBackgroundImage(),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                ClayButton.text(
+                  label: 'Remove',
+                  danger: true,
+                  size: ClayButtonSize.compact,
                   onPressed: () => vm.setCustomBackgroundImage(null),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text(
-                    'Clear Image',
-                    style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
                 ),
               ],
             ),
           ),
-        ],
+        ] else
+          ClayButton.primary(
+            label: 'Upload image',
+            icon: Icons.add_photo_alternate_rounded,
+            expand: true,
+            onPressed: () => vm.pickCustomBackgroundImage(),
+          ),
 
-        const SizedBox(height: AppDimensions.spacingLg),
-        const Text(
-          'Preset Gradients',
-          style: TextStyle(color: AppColors.textPrimary, fontSize: AppDimensions.fontBody, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: AppDimensions.spacingSm),
+        const SizedBox(height: AppDimensions.spacingXl),
+
+        // --- Preset gradients ---
+        const ClayLabel('Gradients'),
+        const SizedBox(height: 10),
         GridView.builder(
           shrinkWrap: true,
+          clipBehavior: Clip.none,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            crossAxisSpacing: AppDimensions.spacingSm,
-            mainAxisSpacing: AppDimensions.spacingSm,
-            childAspectRatio: 2.2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 12,
+            childAspectRatio: 2.1,
           ),
           itemCount: StoreSpecs.gradientPresets.length,
           itemBuilder: (ctx, index) {
             final preset = StoreSpecs.gradientPresets[index];
             final isSelected = vm.selectedGradientIndex == index && vm.customBackgroundColor == null && !hasBgImage;
-            return InkWell(
+            return _GradientSlab(
+              preset: preset,
+              selected: isSelected,
               onTap: () {
                 if (hasBgImage) vm.setCustomBackgroundImage(null);
                 vm.setGradientIndex(index);
               },
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-              child: Container(
-                decoration: preset.toDecoration().copyWith(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.glassBorder,
-                    width: isSelected ? 2.5 : 1,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    preset.name,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: preset.colors.first.computeLuminance() > 0.5 ? AppColors.textPrimary : Colors.white,
-                      fontSize: AppDimensions.fontXs,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
             );
           },
         ),
-        const SizedBox(height: AppDimensions.spacingLg),
+
+        const SizedBox(height: AppDimensions.spacingXl),
+
+        // --- Solid colour ---
         Row(
           children: [
-            const Text(
-              'Custom Solid Color:',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: AppDimensions.fontBody,
-                fontWeight: FontWeight.w600,
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClayLabel('Solid colour'),
+                  SizedBox(height: 2),
+                  Text(
+                    'Replaces the gradient.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                  ),
+                ],
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 12),
             ColorSwatchButton(
-              color: vm.customBackgroundColor ?? AppColors.surface,
+              color: vm.customBackgroundColor ?? AppColors.clay,
               onColorChanged: (c) {
                 if (hasBgImage) vm.setCustomBackgroundImage(null);
                 vm.setCustomBackgroundColor(c);
               },
-              size: 32,
+              size: 36,
               showIcon: vm.customBackgroundColor == null,
             ),
           ],
         ),
       ],
+    );
+  }
+}
+
+/// One gradient preset: a small raised clay slab whose fill is the gradient.
+/// The selected preset sits sunken in the panel.
+///
+/// Layers, bottom to top: the floating shadow (its own layer so it never
+/// bleeds over the gradient), the clipped gradient, then a transparent clay
+/// surface that only draws the inner highlight / shade pair.
+class _GradientSlab extends StatefulWidget {
+  final ColorGradientPreset preset;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _GradientSlab({required this.preset, required this.selected, required this.onTap});
+
+  @override
+  State<_GradientSlab> createState() => _GradientSlabState();
+}
+
+class _GradientSlabState extends State<_GradientSlab> with SingleTickerProviderStateMixin {
+  static const double _radius = 14;
+  late final AnimationController _sel;
+
+  @override
+  void initState() {
+    super.initState();
+    _sel = AnimationController.unbounded(vsync: this, value: widget.selected ? 1 : 0);
+  }
+
+  @override
+  void didUpdateWidget(_GradientSlab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected != widget.selected) {
+      final motion = ClayMotion.of(context);
+      _sel.springTo(widget.selected ? 1 : 0, spring: widget.selected ? motion.snappy : motion.bouncy);
+    }
+  }
+
+  @override
+  void dispose() {
+    _sel.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preset = widget.preset;
+    final labelColor = preset.colors.first.computeLuminance() > 0.5 ? AppColors.textPrimary : Colors.white;
+
+    return Tooltip(
+      message: preset.name,
+      child: ClayPressable(
+        onTap: widget.onTap,
+        squash: 0.05,
+        builder: (context, hover, press, _) {
+          return AnimatedBuilder(
+            animation: _sel,
+            builder: (context, _) {
+              final s = _sel.value.clamp(0.0, 1.0);
+              final h = hover.clamp(0.0, 1.0);
+              final p = press.clamp(0.0, 1.0);
+              // Sunk amount: fully when selected, partly while pressed.
+              final sunk = (s + p * (1 - s)).clamp(0.0, 1.0);
+
+              return Stack(
+                clipBehavior: Clip.none,
+                fit: StackFit.expand,
+                children: [
+                  // 1. Floating shadow, fades out as the slab sinks.
+                  DecoratedBox(
+                    decoration: ClayDecoration(
+                      color: Colors.transparent,
+                      radius: _radius,
+                      depth: 0,
+                      lift: 8 + 4 * h,
+                      shadowOpacity: 0.18 * (1 - sunk),
+                      highlightOpacity: 0,
+                      shadeOpacity: 0,
+                    ),
+                  ),
+                  // 2. The gradient itself.
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(_radius),
+                    child: DecoratedBox(decoration: preset.toDecoration()),
+                  ),
+                  // 3. Inner lighting pair over the gradient; inverts when sunk.
+                  DecoratedBox(
+                    decoration: ClayDecoration(
+                      color: Colors.transparent,
+                      radius: _radius,
+                      depth: 4,
+                      lift: 0,
+                      pressed: sunk,
+                      shadowOpacity: 0,
+                      highlightOpacity: 0.6,
+                      shadeOpacity: 0.32 + 0.1 * sunk,
+                    ),
+                  ),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Text(
+                        preset.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: labelColor,
+                          fontSize: AppDimensions.fontXs,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
