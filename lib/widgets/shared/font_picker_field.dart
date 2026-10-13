@@ -4,10 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/store_specs.dart';
-import 'glass_container.dart';
+import '../clay/clay.dart';
 
-/// Shows the current font rendered in itself and opens a searchable picker
-/// over the whole free Google Fonts catalogue.
+/// Shows the current font and opens a searchable picker over the whole free
+/// Google Fonts catalogue.
 class FontPickerField extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
@@ -25,44 +25,20 @@ class FontPickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          '$label:',
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: InkWell(
-            onTap: () async {
-              final picked = await FontPickerDialog.show(context, current: value);
-              if (picked != null && picked != value) onChanged(picked);
-            },
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                border: Border.all(color: AppColors.glassBorder),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: styleFor(value, fontSize: 14, color: AppColors.textPrimary),
-                    ),
-                  ),
-                  const Icon(Icons.unfold_more_rounded, size: 18, color: AppColors.primary),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+    return ClayDropdown<String>(
+      value: value,
+      displayText: value,
+      label: label,
+      // A small sample glyph rendered in the font itself, so the field still
+      // previews the choice.
+      leading: Text(
+        'Aa',
+        style: styleFor(value, fontSize: 15, weight: FontWeight.w700, color: AppColors.primary),
+      ),
+      onOpen: () async {
+        final picked = await FontPickerDialog.show(context, current: value);
+        if (picked != null && picked != value) onChanged(picked);
+      },
     );
   }
 }
@@ -80,9 +56,8 @@ class FontPickerDialog extends StatefulWidget {
   const FontPickerDialog({super.key, required this.current});
 
   static Future<String?> show(BuildContext context, {required String current}) {
-    return showDialog<String>(
+    return showClayDialog<String>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (_) => FontPickerDialog(current: current),
     );
   }
@@ -173,101 +148,83 @@ class _FontPickerDialogState extends State<FontPickerDialog> {
   Widget build(BuildContext context) {
     final entries = _entries;
     final int matches = entries.where((e) => e.family != null).length;
-    final double maxHeight = MediaQuery.sizeOf(context).height * 0.8;
+    final int total = FontPickerDialog.allFamilies.length;
+    // The list must stay bounded so only the rows on screen are built; an
+    // unbounded (shrink-wrapped) list would mount every row and request
+    // every font file.
+    final double listHeight = (MediaQuery.sizeOf(context).height * 0.8 - 220).clamp(220.0, 520.0);
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
-      child: GlassContainer(
-        width: 460,
-        opacity: 0.96,
-        blurX: 20,
-        blurY: 20,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        borderColor: AppColors.glassBorder,
-        padding: const EdgeInsets.all(16),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.font_download_rounded, color: AppColors.primary, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    _query.trim().isEmpty
-                        ? 'Google Fonts (${FontPickerDialog.allFamilies.length})'
-                        : '$matches of ${FontPickerDialog.allFamilies.length} fonts',
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+    return ClayDialog(
+      width: 520,
+      title: 'Fonts',
+      subtitle: _query.trim().isEmpty ? '$total Google Fonts' : '$matches of $total fonts',
+      headerIcon: const Icon(Icons.font_download_rounded, color: AppColors.primary, size: 22),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClayField(
+            controller: _search,
+            autofocus: true,
+            onChanged: _onSearchChanged,
+            onSubmitted: (_) {
+              final first = entries.where((e) => e.family != null).firstOrNull;
+              if (first != null) _pick(first.family!);
+            },
+            hint: 'Search fonts, e.g. "Inter", "Serif", "Mono"',
+            prefix: const Icon(Icons.search_rounded, size: 20, color: AppColors.textMuted),
+            suffix: _search.text.isEmpty
+                ? null
+                : ClayIconButton(
+                    icon: Icons.clear_rounded,
+                    tooltip: 'Clear',
+                    size: 32,
+                    iconSize: 16,
+                    flat: true,
+                    onPressed: () {
+                      _search.clear();
+                      _debounce?.cancel();
+                      setState(() => _query = '');
+                    },
                   ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
-                    tooltip: 'Close',
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _search,
-                autofocus: true,
-                onChanged: _onSearchChanged,
-                onSubmitted: (_) {
-                  final first = entries.where((e) => e.family != null).firstOrNull;
-                  if (first != null) _pick(first.family!);
-                },
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'Search fonts, e.g. "Inter", "Serif", "Mono"',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                  suffixIcon: _search.text.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 18),
-                          onPressed: () {
-                            _search.clear();
-                            _debounce?.cancel();
-                            setState(() => _query = '');
-                          },
-                        ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Previews load as you scroll, only for the fonts you look at.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 10.5),
-              ),
-              const SizedBox(height: 8),
-              Flexible(
-                child: entries.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text('No fonts match that search.', style: TextStyle(color: AppColors.textMuted)),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: entries.length,
-                        itemExtent: 62,
-                        itemBuilder: (context, index) {
-                          final entry = entries[index];
-                          if (entry.header != null) return _SectionHeaderRow(entry.header!);
-                          final family = entry.family!;
-                          return _FontRow(
-                            key: ValueKey(family),
-                            family: family,
-                            selected: family == widget.current,
-                            onTap: () => _pick(family),
-                          );
-                        },
-                      ),
-              ),
-            ],
           ),
-        ),
+          const SizedBox(height: 6),
+          const Padding(
+            padding: EdgeInsets.only(left: 4),
+            child: Text(
+              'Previews load as you scroll, only for the fonts you look at.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 10.5),
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClayWell(
+            padding: const EdgeInsets.all(6),
+            clipBehavior: Clip.antiAlias,
+            child: SizedBox(
+              height: listHeight,
+              child: entries.isEmpty
+                  ? const Center(
+                      child: Text('No fonts match that search.', style: TextStyle(color: AppColors.textMuted)),
+                    )
+                  : ListView.builder(
+                      itemCount: entries.length,
+                      itemExtent: 62,
+                      itemBuilder: (context, index) {
+                        final entry = entries[index];
+                        if (entry.header != null) return _SectionHeaderRow(entry.header!);
+                        final family = entry.family!;
+                        return _FontRow(
+                          key: ValueKey(family),
+                          family: family,
+                          selected: family == widget.current,
+                          onTap: () => _pick(family),
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -281,18 +238,7 @@ class _SectionHeaderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.bottomLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 4, bottom: 8),
-        child: Text(
-          label.toUpperCase(),
-          style: const TextStyle(
-            color: AppColors.textMuted,
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.9,
-          ),
-        ),
-      ),
+      child: ClayLabel(label, padding: const EdgeInsets.only(left: 8, bottom: 8)),
     );
   }
 }
@@ -306,48 +252,39 @@ class _FontRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: ClayTile(
+        selected: selected,
+        onTap: onTap,
+        height: 58,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        radius: AppDimensions.radiusClaySm,
         // Script and display fonts can have tall line boxes; clip instead of overflowing.
-        clipBehavior: Clip.hardEdge,
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.45),
-          borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-          border: Border.all(color: selected ? AppColors.primary : AppColors.glassBorder),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    family,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: selected ? AppColors.primary : AppColors.textMuted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  LazyFontPreview(
-                    family: family,
-                    text: 'The quick brown fox jumps',
-                    fontSize: 17,
-                    weight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
-                ],
+        child: ClipRect(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                family,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: selected ? AppColors.primaryDeep : AppColors.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            if (selected) const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 18),
-          ],
+              LazyFontPreview(
+                family: family,
+                text: 'The quick brown fox jumps',
+                fontSize: 17,
+                weight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ],
+          ),
         ),
       ),
     );

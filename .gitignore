@@ -117,3 +117,6 @@ claude-flow*
 firebase-debug.log
 firebase-debug.*.log
 ui-debug.log
+
+# Blender tooling
+tools/blender/__pycache__/

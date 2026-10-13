@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/store_specs.dart';
 import '../../../models/canvas_text_item.dart';
 import '../../../viewmodels/editor_viewmodel.dart';
+import '../../../widgets/clay/clay.dart';
 import '../../../widgets/shared/color_swatch_button.dart';
 import '../../../widgets/shared/font_picker_field.dart';
-import '../../../widgets/shared/labeled_slider.dart';
 import '../widgets/multi_canvas_workspace.dart';
 
 /// Edits the headline, the subtitle, or an extra text element, depending on [elementId].
@@ -29,6 +28,12 @@ class _TextInspectorState extends State<TextInspector> {
     'Bold': FontWeight.w700,
     'ExtraBold': FontWeight.w800,
     'Black': FontWeight.w900,
+  };
+
+  static const Map<TextAlign, IconData> _alignIcons = {
+    TextAlign.left: Icons.format_align_left_rounded,
+    TextAlign.center: Icons.format_align_center_rounded,
+    TextAlign.right: Icons.format_align_right_rounded,
   };
 
   late final TextEditingController _controller;
@@ -78,31 +83,26 @@ class _TextInspectorState extends State<TextInspector> {
       );
     }
 
+    // Sizes are real pixels on the 1320×2868 export; the preview card is much
+    // smaller, which is why the canvas text looks tiny next to the number.
+    final int previewPx = (target.fontSize * MultiCanvasWorkspace.previewHeight / DesignSpace.height).round();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
+        ClayField(
           controller: _controller,
           focusNode: _textFocus,
+          label: 'Text',
+          hint: target.isHeadline ? 'Leave empty to hide' : null,
           onChanged: target.setText,
           maxLines: 3,
           minLines: 1,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: AppDimensions.fontMd,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: InputDecoration(
-            labelText: 'Text',
-            hintText: target.isHeadline ? 'Leave empty to hide' : null,
-            labelStyle: const TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w500),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         FontPickerField(value: target.font, onChanged: target.setFont),
-        const SizedBox(height: 12),
-        LabeledSlider(
+        const SizedBox(height: 14),
+        ClaySlider(
           label: 'Size on export',
           valueText: '${target.fontSize.toInt()}px',
           value: target.fontSize.clamp(target.minSize, target.maxSize),
@@ -111,18 +111,15 @@ class _TextInspectorState extends State<TextInspector> {
           onChanged: target.setFontSize,
         ),
         Text(
-          // Sizes are real pixels on the 1320×2868 export; the preview card is
-          // much smaller, which is why the canvas text looks tiny next to the number.
-          '${target.fontSize.toInt()}px on the ${DesignSpace.width.toInt()}×${DesignSpace.height.toInt()} '
-          'export ≈ ${(target.fontSize * MultiCanvasWorkspace.previewHeight / DesignSpace.height).round()}px '
-          'on the preview card at 100% zoom.',
+          'Px on the ${DesignSpace.width.toInt()}×${DesignSpace.height.toInt()} export (≈ ${previewPx}px on the card).',
           style: const TextStyle(color: AppColors.textMuted, fontSize: 10.5, height: 1.3),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
+        const ClayLabel('Style', padding: EdgeInsets.only(left: 4, bottom: 6)),
         _buildWeightAlignColorRow(target),
         if (target.supportsRotation) ...[
-          const SizedBox(height: 10),
-          LabeledSlider(
+          const SizedBox(height: 14),
+          ClaySlider(
             label: 'Rotation',
             valueText: '${target.rotation.toInt()}°',
             value: target.rotation,
@@ -131,28 +128,20 @@ class _TextInspectorState extends State<TextInspector> {
             onChanged: target.setRotation,
           ),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         Text(
           target.supportsRotation
-              ? 'On the canvas: drag to move, corner handles to resize, the top handle to rotate. '
-                    'Double-click the text to edit it here.'
-              : 'On the canvas: drag to move, corner handles to resize. Double-click the text to edit it here.',
+              ? 'Drag to move, corners to resize, top handle to rotate. Double-click to edit.'
+              : 'Drag to move, corners to resize. Double-click to edit.',
           style: const TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.3),
         ),
-        const SizedBox(height: 14),
-        OutlinedButton.icon(
+        const SizedBox(height: 10),
+        ClayButton.text(
+          label: target.isHeadline ? 'Clear text' : 'Delete text element',
+          icon: Icons.delete_outline_rounded,
+          danger: true,
+          expand: true,
           onPressed: () => target.remove(vm),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.error,
-            side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
-            minimumSize: const Size.fromHeight(36),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
-          ),
-          icon: const Icon(Icons.delete_outline_rounded, size: 16),
-          label: Text(
-            target.isHeadline ? 'Clear text' : 'Delete text element',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          ),
         ),
       ],
     );
@@ -165,54 +154,38 @@ class _TextInspectorState extends State<TextInspector> {
 
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.65),
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            border: Border.all(color: AppColors.glassBorder),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: currentWeightName,
-              dropdownColor: Colors.white,
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontWeight: FontWeight.w600),
-              icon: const Icon(Icons.arrow_drop_down_rounded, color: AppColors.primary, size: 18),
-              items: _weightOptions.keys.map((k) => DropdownMenuItem(value: k, child: Text(k))).toList(),
-              onChanged: (k) {
-                if (k != null && _weightOptions.containsKey(k)) target.setWeight(_weightOptions[k]!);
-              },
-            ),
+        Expanded(
+          child: ClayDropdown<String>(
+            value: currentWeightName,
+            height: 40,
+            items: [for (final k in _weightOptions.keys) ClayDropdownItem(value: k, label: k)],
+            onChanged: (k) {
+              if (_weightOptions.containsKey(k)) target.setWeight(_weightOptions[k]!);
+            },
           ),
         ),
         const SizedBox(width: 8),
-        for (final entry in const {
-          TextAlign.left: Icons.format_align_left_rounded,
-          TextAlign.center: Icons.format_align_center_rounded,
-          TextAlign.right: Icons.format_align_right_rounded,
-        }.entries)
-          InkWell(
-            onTap: () => target.setAlignment(entry.key),
-            borderRadius: BorderRadius.circular(4),
-            child: Container(
-              padding: const EdgeInsets.all(5),
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: target.alignment == entry.key ? AppColors.primary : Colors.white.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Icon(
-                entry.value,
-                size: 14,
-                color: target.alignment == entry.key ? Colors.white : AppColors.textPrimary,
-              ),
-            ),
-          ),
-        const Spacer(),
-        ColorSwatchButton(color: target.color, onColorChanged: target.setColor, size: 30),
+        ClaySegmented<TextAlign>(
+          height: 40,
+          segmentWidth: 38,
+          segments: [
+            for (final entry in _alignIcons.entries)
+              ClaySegment(value: entry.key, icon: entry.value, tooltip: _alignTooltip(entry.key)),
+          ],
+          selected: _alignIcons.containsKey(target.alignment) ? target.alignment : TextAlign.left,
+          onChanged: target.setAlignment,
+        ),
+        const SizedBox(width: 8),
+        ColorSwatchButton(color: target.color, onColorChanged: target.setColor, size: 32),
       ],
     );
   }
+
+  static String _alignTooltip(TextAlign align) => switch (align) {
+        TextAlign.center => 'Align centre',
+        TextAlign.right => 'Align right',
+        _ => 'Align left',
+      };
 }
 
 /// Uniform read/write access to whichever text element is selected.

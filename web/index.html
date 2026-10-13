@@ -9,20 +9,140 @@
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Mocuply">
+  <meta name="apple-mobile-web-app-title" content="Mockuply">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <meta name="theme-color" content="#1A4731">
+  <meta name="theme-color" content="#EFE8D6">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png"/>
   <link rel="icon" type="image/png" sizes="192x192" href="icons/Icon-192.png"/>
 
-  <title>Mocuply</title>
+  <title>Mockuply</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #EFE8D6;
+    }
+
+    /* HTML splash: shown until Flutter paints its first frame. */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483647;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      background: #EFE8D6;
+      opacity: 1;
+      transition: opacity 250ms ease-out;
+      pointer-events: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    #splash.splash-hide {
+      opacity: 0;
+    }
+    #splash img {
+      width: 96px;
+      height: 96px;
+      display: block;
+      border-radius: 28px;
+      animation: splashBob 2.4s ease-in-out infinite;
+      will-change: transform;
+    }
+    #splash .splash-wordmark {
+      font-family: Nunito, "Nunito Sans", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: #1F3A2E;
+    }
+    @keyframes splashBob {
+      0%, 100% { transform: translateY(-6px); }
+      50% { transform: translateY(6px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #splash img { animation: none; }
+      #splash { transition: none; }
+    }
+  </style>
 </head>
 <body>
+  <div id="splash" aria-hidden="true">
+    <img src="icons/Icon-192.png" alt="">
+    <div class="splash-wordmark">Mockuply</div>
+  </div>
+
   <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    // Remove the splash once Flutter has attached its view to the DOM. No Dart
+    // changes needed: we watch for the engine's host element, give it a beat to
+    // paint its first frame, then fade the splash out and drop it.
+    (function () {
+      var splash = document.getElementById('splash');
+      if (!splash) return;
+      var removed = false;
+
+      function removeSplash() {
+        if (removed) return;
+        removed = true;
+        splash.classList.add('splash-hide');
+        var done = false;
+        function finish() {
+          if (done) return;
+          done = true;
+          if (splash.parentNode) splash.parentNode.removeChild(splash);
+        }
+        splash.addEventListener('transitionend', finish, { once: true });
+        setTimeout(finish, 400);
+      }
+
+      function flutterIsUp() {
+        return !!(document.querySelector('flutter-view') || document.querySelector('flt-glass-pane'));
+      }
+
+      function onFlutterUp() {
+        // Let the engine paint a frame or two before uncovering the canvas.
+        setTimeout(removeSplash, 300);
+      }
+
+      if (flutterIsUp()) {
+        onFlutterUp();
+        return;
+      }
+
+      var observer = null;
+      if (typeof MutationObserver !== 'undefined') {
+        observer = new MutationObserver(function () {
+          if (flutterIsUp()) {
+            observer.disconnect();
+            onFlutterUp();
+          }
+        });
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+      } else {
+        var poll = setInterval(function () {
+          if (flutterIsUp()) {
+            clearInterval(poll);
+            onFlutterUp();
+          }
+        }, 100);
+      }
+
+      // Safety net: never leave the splash covering the page.
+      setTimeout(function () {
+        if (observer) observer.disconnect();
+        removeSplash();
+      }, 20000);
+    })();
+  </script>
 </body>
 </html>
