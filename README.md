@@ -11,7 +11,7 @@
   <p align="center">
     <a href="https://flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.41+-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" /></a>
     <a href="https://dart.dev"><img src="https://img.shields.io/badge/Dart-3.11+-0175C2?style=for-the-badge&logo=dart&logoColor=white" alt="Dart" /></a>
-    <a href="https://firebase.google.com"><img src="https://img.shields.io/badge/Firebase-Hosting-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase" /></a>
+    <a href="#"><img src="https://img.shields.io/badge/Platform-Web-02569B?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Platform" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2D6A4F?style=for-the-badge" alt="License" /></a>
     <a href="#"><img src="https://img.shields.io/badge/Privacy-100%25_Client--Side-E8C464?style=for-the-badge" alt="Privacy" /></a>
   </p>
@@ -120,34 +120,7 @@ Speed up your design process with intuitive hotkeys:
 
 ---
 
-## 🛠️ Architecture & Tech Stack
-
-Mokuply is built on Flutter Web leveraging the high-performance **CanvasKit** rendering engine:
-
-```
-lib/
-├── core/
-│   ├── constants/       # Store resolutions, design space specs, colors & dimensions
-│   ├── layout/          # CanvasGeometry, drag math & alignment snap anchors
-│   ├── motion/          # Spring physics, clay pressables & staggered entrances
-│   └── theme/           # Nunito typography & clay token hierarchy
-├── data/
-│   └── templates/       # Built-in starter templates (SaaS, Team Organize, Minimalist)
-├── models/              # TemplateData, CanvasDeviceItem, CanvasTextItem, ProjectTemplate
-├── services/            # Offscreen high-res render pipeline, ZIP archiver, localStorage
-├── viewmodels/          # EditorViewModel, LibraryViewModel, ExportViewModel (Provider)
-├── views/
-│   ├── home/            # Welcome portal, 3D clay hero render & template gallery
-│   └── editor/          # Dual-row workspace, action rail, inspectors & export modals
-└── widgets/
-    ├── clay/            # Custom claymorphism UI kit (buttons, panels, dialogs, sliders)
-    ├── canvas/          # DeviceFrameWidget, selection chrome, handles & snap overlays
-    └── shared/          # Google Fonts lazy picker catalog, color swatches & brand assets
-```
-
----
-
-## 💻 Local Development
+## 💻 Local Development & Building
 
 ### Prerequisites
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (`>= 3.41.0`)
@@ -182,23 +155,37 @@ flutter analyze
 flutter test
 ```
 
----
-
-## 🚢 Building & Deployment
-
-Mokuply compiles into a static single-page application (SPA) optimized for Firebase Hosting or any static CDN (Vercel, Netlify, Cloudflare Pages, GitHub Pages).
-
-### Build for Production
+### 6. Build production web bundle
 ```bash
 flutter build web --release
 ```
 
-### Deploy to Firebase Hosting
-```bash
-firebase deploy --only hosting
-```
+---
 
-The included `firebase.json` automatically configures SPA URL rewriting, aggressive caching for hashed immutable assets (`woff2`, `png`, `wasm`), and no-cache rules for `flutter_bootstrap.js` to guarantee seamless client updates.
+## 🛠️ Architecture & Tech Stack
+
+Mokuply is built on Flutter Web leveraging the high-performance **CanvasKit** rendering engine:
+
+```
+lib/
+├── core/
+│   ├── constants/       # Store resolutions, design space specs, colors & dimensions
+│   ├── layout/          # CanvasGeometry, drag math & alignment snap anchors
+│   ├── motion/          # Spring physics, clay pressables & staggered entrances
+│   └── theme/           # Nunito typography & clay token hierarchy
+├── data/
+│   └── templates/       # Built-in starter templates (SaaS, Team Organize, Minimalist)
+├── models/              # TemplateData, CanvasDeviceItem, CanvasTextItem, ProjectTemplate
+├── services/            # Offscreen high-res render pipeline, ZIP archiver, localStorage
+├── viewmodels/          # EditorViewModel, LibraryViewModel, ExportViewModel (Provider)
+├── views/
+│   ├── home/            # Welcome portal, 3D clay hero render & template gallery
+│   └── editor/          # Dual-row workspace, action rail, inspectors & export modals
+└── widgets/
+    ├── clay/            # Custom claymorphism UI kit (buttons, panels, dialogs, sliders)
+    ├── canvas/          # DeviceFrameWidget, selection chrome, handles & snap overlays
+    └── shared/          # Google Fonts lazy picker catalog, color swatches & brand assets
+```
 
 ---
 
