@@ -7,7 +7,8 @@
 #   4. commits the bump, tags it vX.Y.Z and publishes a GitHub release with
 #      generated notes and the web build attached.
 #
-# Deploying stays manual (`firebase deploy --only hosting`). Run it by hand
+# Deploying stays manual: unzip the release's web build into build/web and
+# run `firebase deploy --only hosting`. Run this workflow by hand
 # from the Actions tab to force a patch, minor or major release.
 name: Release
 
@@ -93,7 +94,9 @@ jobs:
           echo "tag=v$next" >> "$GITHUB_OUTPUT"
 
       - name: Build web
-        run: flutter build web --release
+        run: |
+          flutter build web --release
+          node tools/fingerprint_web.mjs build/web
 
       - name: Commit the version and tag it
         env:
