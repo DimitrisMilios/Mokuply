@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../core/constants/store_specs.dart';
+import 'template_assets.dart';
 
 /// A phone frame placed on the canvas.
 ///
@@ -75,10 +76,13 @@ class CanvasDeviceItem {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  /// Screenshots are written only through [assets] (see [AssetWriter]).
+  Map<String, dynamic> toJson({AssetWriter? assets}) {
     return {
       'id': id,
       'frameStyle': frameStyle.name,
+      if (assets != null && iosScreenshotBytes != null) 'iosScreenshot': assets(iosScreenshotBytes!),
+      if (assets != null && androidScreenshotBytes != null) 'androidScreenshot': assets(androidScreenshotBytes!),
       'scale': scale,
       'offsetX': offsetX,
       'offsetY': offsetY,
@@ -89,10 +93,12 @@ class CanvasDeviceItem {
 
   /// Reads both the current format and the legacy per-store format
   /// (`appStoreOffsetX`, `iphone16ProMax`, ...) produced by older drafts.
-  factory CanvasDeviceItem.fromJson(Map<String, dynamic> json) {
+  factory CanvasDeviceItem.fromJson(Map<String, dynamic> json, {AssetReader? assets}) {
     return CanvasDeviceItem(
       id: json['id'] as String? ?? 'dev_${DateTime.now().millisecondsSinceEpoch}',
       frameStyle: DeviceFrameStyle.fromName(json['frameStyle'] as String?),
+      iosScreenshotBytes: readAsset(json['iosScreenshot'], assets),
+      androidScreenshotBytes: readAsset(json['androidScreenshot'], assets),
       scale: (json['scale'] as num?)?.toDouble() ?? 0.92,
       offsetX: (json['offsetX'] as num?)?.toDouble() ?? 0.0,
       offsetY: (json['offsetY'] as num?)?.toDouble() ?? 0.0,

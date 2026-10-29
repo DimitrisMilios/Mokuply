@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'template_assets.dart';
 
 /// A standalone custom image asset placed on the canvas.
 /// Position, size and tilt are shared by every store.
@@ -43,6 +44,37 @@ class CanvasImageItem {
       rotation: rotation ?? this.rotation,
       opacity: opacity ?? this.opacity,
       hasShadow: hasShadow ?? this.hasShadow,
+    );
+  }
+
+  /// Image layers only exist in template zips, so the bytes always go
+  /// through [assets].
+  Map<String, dynamic> toJson(AssetWriter assets) {
+    return {
+      'id': id,
+      'image': assets(imageBytes),
+      'scale': scale,
+      'offsetX': offsetX,
+      'offsetY': offsetY,
+      'rotation': rotation,
+      'opacity': opacity,
+      'hasShadow': hasShadow,
+    };
+  }
+
+  /// Null when the image itself is missing from the zip.
+  static CanvasImageItem? fromJson(Map<String, dynamic> json, AssetReader? assets) {
+    final bytes = readAsset(json['image'], assets);
+    if (bytes == null) return null;
+    return CanvasImageItem(
+      id: json['id'] as String? ?? 'img_${DateTime.now().millisecondsSinceEpoch}',
+      imageBytes: bytes,
+      scale: (json['scale'] as num?)?.toDouble() ?? 1.0,
+      offsetX: (json['offsetX'] as num?)?.toDouble() ?? 0.0,
+      offsetY: (json['offsetY'] as num?)?.toDouble() ?? 0.0,
+      rotation: (json['rotation'] as num?)?.toDouble() ?? 0.0,
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+      hasShadow: json['hasShadow'] as bool? ?? false,
     );
   }
 

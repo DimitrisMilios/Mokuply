@@ -4,6 +4,7 @@ import '../core/constants/store_specs.dart';
 import 'canvas_device_item.dart';
 import 'canvas_image_item.dart';
 import 'canvas_text_item.dart';
+import 'template_assets.dart';
 
 /// Pure immutable data model for one mockup screen.
 ///
@@ -175,7 +176,9 @@ class TemplateData {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  /// Images (screenshots, background, image layers) are written only through
+  /// [assets]; see [AssetWriter].
+  Map<String, dynamic> toJson({AssetWriter? assets}) {
     return {
       'platform': platform.name,
       'name': name,
@@ -196,6 +199,8 @@ class TemplateData {
       'selectedGradientIndex': selectedGradientIndex,
       'customBackgroundColor': customBackgroundColor?.toARGB32(),
       'customGradientColors': customGradientColors?.map((c) => c.toARGB32()).toList(),
+      if (assets != null && customBackgroundImageBytes != null)
+        'customBackgroundImage': assets(customBackgroundImageBytes!),
       'deviceScale': deviceScale,
       'deviceOffsetX': deviceOffsetX,
       'deviceOffsetY': deviceOffsetY,
@@ -205,7 +210,8 @@ class TemplateData {
       'textOffsetY': textOffsetY,
       'subtitleOffsetX': subtitleOffsetX,
       'subtitleOffsetY': subtitleOffsetY,
-      'devices': devices.map((d) => d.toJson()).toList(),
+      'devices': devices.map((d) => d.toJson(assets: assets)).toList(),
+      if (assets != null) 'customImageItems': customImageItems.map((i) => i.toJson(assets)).toList(),
       'customTextItems': customTextItems.map((t) => t.toJson()).toList(),
       DesignSpace.textUnitKey: DesignSpace.textUnitPixels,
     };
@@ -213,7 +219,7 @@ class TemplateData {
 
   /// Legacy per-store keys (`appStoreTextOffsetX`, ...) from older drafts are
   /// ignored; the shared offsets were always written alongside them.
-  factory TemplateData.fromJson(Map<String, dynamic> json) {
+  factory TemplateData.fromJson(Map<String, dynamic> json, {AssetReader? assets}) {
     // Drafts saved before font sizes became export pixels carry no unit marker.
     final double fontScale =
         json[DesignSpace.textUnitKey] == DesignSpace.textUnitPixels ? 1.0 : DesignSpace.legacyTextScale;
@@ -259,6 +265,7 @@ class TemplateData {
       customGradientColors: json['customGradientColors'] != null
           ? (json['customGradientColors'] as List).map((c) => Color(c as int)).toList()
           : null,
+      customBackgroundImageBytes: readAsset(json['customBackgroundImage'], assets),
       deviceScale: (json['deviceScale'] as num?)?.toDouble() ?? 0.92,
       deviceOffsetX: (json['deviceOffsetX'] as num?)?.toDouble() ?? 0.0,
       deviceOffsetY: (json['deviceOffsetY'] as num?)?.toDouble() ?? 0.0,
@@ -269,7 +276,12 @@ class TemplateData {
       subtitleOffsetX: (json['subtitleOffsetX'] as num?)?.toDouble() ?? 0.0,
       subtitleOffsetY: (json['subtitleOffsetY'] as num?)?.toDouble() ?? 0.0,
       devices: (json['devices'] as List?)
-              ?.map((d) => CanvasDeviceItem.fromJson(d as Map<String, dynamic>))
+              ?.map((d) => CanvasDeviceItem.fromJson(d as Map<String, dynamic>, assets: assets))
+              .toList() ??
+          const [],
+      customImageItems: (json['customImageItems'] as List?)
+              ?.map((i) => CanvasImageItem.fromJson(i as Map<String, dynamic>, assets))
+              .nonNulls
               .toList() ??
           const [],
       customTextItems: (json['customTextItems'] as List?)

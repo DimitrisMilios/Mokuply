@@ -11,12 +11,15 @@ import '../../../widgets/clay/clay.dart';
 /// Template card: a clay card with a sunken preview tray holding six tiny
 /// clay phones, the category as a muted caps line, title, description and a
 /// green "Use template" button. Tapping anywhere on the card uses it.
+/// Templates the user saved get a delete button beside it ([onDelete]).
 class TemplateCard extends StatelessWidget {
   final ProjectTemplate template;
+  final VoidCallback? onDelete;
 
   const TemplateCard({
     super.key,
     required this.template,
+    this.onDelete,
   });
 
   static const double _previewHeight = 140;
@@ -69,11 +72,27 @@ class TemplateCard extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        ClayButton.primary(
-          label: 'Use template',
-          icon: Icons.edit_note_rounded,
-          expand: true,
-          onPressed: () => _use(context),
+        Row(
+          children: [
+            Expanded(
+              child: ClayButton.primary(
+                label: 'Use template',
+                icon: Icons.edit_note_rounded,
+                expand: true,
+                onPressed: () => _use(context),
+              ),
+            ),
+            if (onDelete != null) ...[
+              const SizedBox(width: 10),
+              ClayIconButton(
+                icon: Icons.delete_outline_rounded,
+                tooltip: 'Delete template',
+                size: 44,
+                danger: true,
+                onPressed: onDelete,
+              ),
+            ],
+          ],
         ),
       ],
     );
