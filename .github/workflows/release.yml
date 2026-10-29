@@ -1,0 +1,123 @@
+# Every push (or merged pull request) to main:
+#   1. analyses and tests the app,
+#   2. bumps the version in pubspec.yaml from the commit messages since the
+#      last release (feat → minor, `!:`/BREAKING CHANGE → major, else patch;
+#      the build number always goes up by one),
+#   3. builds the web app,
+#   4. commits the bump, tags it vX.Y.Z and publishes a GitHub release with
+#      generated notes and the web build attached.
+#
+# Deploying stays manual (`firebase deploy --only hosting`). Run it by hand
+# from the Actions tab to force a patch, minor or major release.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version part to increase
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
+
+# Releases run one at a time, in push order, so versions never collide.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # The bump commit is pushed with GITHUB_TOKEN, which does not start new
+    # runs; this guard also covers bump commits pushed by hand.
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.7
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Analyse and test
+        run: |
+          flutter analyze --no-fatal-infos
+          flutter test
+
+      - name: Work out the next version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump || 'auto' }}
+        run: |
+          current=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n1)
+          name=${current%%+*}
+          build=${current#*+}
+          [ "$build" = "$current" ] && build=0
+          IFS=. read -r major minor patch <<< "$name"
+
+          last_tag=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          log=$(git log --format='%s%n%b' ${last_tag:+"$last_tag..HEAD"})
+
+          bump=$BUMP
+          if [ "$bump" = auto ]; then
+            if grep -qE '^[a-z]+(\([^)]*\))?!:|BREAKING CHANGE' <<< "$log"; then bump=major
+            elif grep -qE '^feat(\([^)]*\))?:' <<< "$log"; then bump=minor
+            else bump=patch
+            fi
+          fi
+          case $bump in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            *) patch=$((patch + 1)) ;;
+          esac
+          # Never reuse a version that is already tagged.
+          while git rev-parse -q --verify "refs/tags/v$major.$minor.$patch" > /dev/null; do
+            patch=$((patch + 1))
+          done
+
+          next="$major.$minor.$patch"
+          build=$((build + 1))
+          sed -i "s/^version:.*/version: $next+$build/" pubspec.yaml
+          echo "Releasing $current -> $next+$build ($bump, since ${last_tag:-the first commit})"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "tag=v$next" >> "$GITHUB_OUTPUT"
+
+      - name: Build web
+        run: flutter build web --release
+
+      - name: Commit the version and tag it
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Only the version: `flutter pub get` may have rewritten pubspec.lock.
+          git commit -m "chore(release): $TAG [skip ci]" -- pubspec.yaml
+          git restore .
+          # Someone may have pushed meanwhile; their run releases after this one.
+          git pull --rebase origin main
+          git tag -a "$TAG" -m "$TAG"
+          git push origin HEAD:main
+          git push origin "$TAG"
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          (cd build/web && zip -qr "$GITHUB_WORKSPACE/mockuply-web-$TAG.zip" .)
+          gh release create "$TAG" "mockuply-web-$TAG.zip" \
+            --title "$TAG" \
+            --generate-notes \
+            --verify-tag \
+            --latest

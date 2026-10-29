@@ -17,14 +17,39 @@ class TemplateGallery extends StatelessWidget {
     try {
       final imported = await context.read<LibraryViewModel>().importTemplateFile();
       if (imported != null && context.mounted) ClayToast.show(context, 'Loaded "${imported.title}".');
-    } on FormatException {
+    } on FormatException catch (e) {
+      debugPrint('TemplateGallery import error: $e');
       if (context.mounted) ClayToast.show(context, 'That file could not be read as a template.', error: true);
     }
+  }
+
+  Future<void> _delete(BuildContext context, ProjectTemplate template) async {
+    final confirmed = await showClayDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => ClayDialog(
+        width: 420,
+        title: 'Delete template?',
+        subtitle: '"${template.title}" will be removed from this browser. This cannot be undone.',
+        actions: [
+          ClayButton.text(label: 'Cancel', onPressed: () => Navigator.of(dialogCtx).pop(false)),
+          ClayButton.danger(
+            label: 'Delete',
+            icon: Icons.delete_outline_rounded,
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+          ),
+        ],
+        child: const SizedBox.shrink(),
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await context.read<LibraryViewModel>().deleteCustomTemplate(template);
+    if (context.mounted) ClayToast.show(context, 'Deleted "${template.title}".');
   }
 
   @override
   Widget build(BuildContext context) {
     final templates = context.select<LibraryViewModel, List<ProjectTemplate>>((lib) => lib.templates);
+    final library = context.read<LibraryViewModel>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +82,7 @@ class TemplateGallery extends StatelessWidget {
               ],
             );
             final Widget actions = ClayButton.neutral(
-              label: 'Import .mokuply template',
+              label: 'Import template (.zip)',
               icon: Icons.file_upload_outlined,
               onPressed: () => _import(context),
             );
@@ -101,9 +126,16 @@ class TemplateGallery extends StatelessWidget {
                 itemBuilder: (ctx, index) {
                   // Cards stagger after the section header; capped so the
                   // whole entrance stays short on long galleries.
+                  final template = templates[index];
                   return ClayStagger(
                     index: 1 + (index < 6 ? index : 6),
-                    child: TemplateCard(template: templates[index]),
+                    child: TemplateCard(
+                      // Keyed so a deletion does not hand a card's hover
+                      // state to the template that slides into its place.
+                      key: ValueKey(template.id),
+                      template: template,
+                      onDelete: library.isCustomTemplate(template) ? () => _delete(context, template) : null,
+                    ),
                   );
                 },
               );

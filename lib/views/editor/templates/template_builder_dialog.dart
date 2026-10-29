@@ -9,7 +9,7 @@ import '../../../widgets/clay/clay.dart';
 import 'template_dialog_parts.dart';
 
 /// "Save as template": keep the open project in this browser's gallery,
-/// download it as a `.mokuply` file, or copy a Dart snippet.
+/// download it as a template zip (screenshots included), or copy a Dart snippet.
 class TemplateBuilderDialog extends StatefulWidget {
   const TemplateBuilderDialog({super.key});
 
@@ -101,7 +101,7 @@ class _TemplateBuilderDialogState extends State<TemplateBuilderDialog> {
     return ClayDialog(
       width: 760,
       title: 'Save as template',
-      subtitle: 'Keep it in this browser, download a .mokuply file, or copy the Dart snippet.',
+      subtitle: 'Keep it in this browser, download a .zip with your screenshots, or copy the Dart snippet.',
       headerIcon: Image.asset(
         'assets/clay/icon_bookmark.png',
         width: 40,
@@ -133,7 +133,7 @@ class _TemplateBuilderDialogState extends State<TemplateBuilderDialog> {
                 icon: _copied ? Icons.check_rounded : Icons.copy_rounded,
                 onPressed: () => _copy(_snippet()),
               ),
-              ClayButton.neutral(label: 'Download .mokuply', icon: Icons.download_rounded, onPressed: _download),
+              ClayButton.neutral(label: 'Download .zip', icon: Icons.download_rounded, onPressed: _download),
               ClayButton.primary(
                 label: _savedToGallery ? 'Saved' : 'Save',
                 icon: _savedToGallery ? Icons.check_rounded : Icons.save_rounded,
