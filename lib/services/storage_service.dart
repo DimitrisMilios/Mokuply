@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/project_template.dart';
 import '../models/template_data.dart';
+import 'template_package.dart';
 import 'storage_service_stub.dart'
     if (dart.library.html) 'storage_service_web.dart';
 
@@ -50,6 +51,34 @@ class StorageService {
       debugPrint('StorageService.saveCustomTemplates error: $e');
     }
   }
+
+  /// Keeps [template] with its images (screenshots, backgrounds, image
+  /// layers) in the browser's binary storage, as a template zip.
+  /// [saveCustomTemplates] keeps only the text, which fits in localStorage.
+  static Future<void> saveTemplateImages(ProjectTemplate template) async {
+    try {
+      await PlatformStorage.setBytes(_templateFileKey(template.id), TemplatePackage.encode(template));
+    } catch (e) {
+      debugPrint('StorageService.saveTemplateImages error: $e');
+    }
+  }
+
+  /// The template saved by [saveTemplateImages], or null when there is none
+  /// (templates saved before images were kept).
+  static Future<ProjectTemplate?> loadTemplateImages(String templateId) async {
+    try {
+      final bytes = await PlatformStorage.getBytes(_templateFileKey(templateId));
+      return bytes == null ? null : TemplatePackage.decode(bytes);
+    } catch (e) {
+      debugPrint('StorageService.loadTemplateImages error: $e');
+      return null;
+    }
+  }
+
+  static Future<void> deleteTemplateImages(String templateId) =>
+      PlatformStorage.removeBytes(_templateFileKey(templateId));
+
+  static String _templateFileKey(String templateId) => 'template_$templateId';
 
   /// Load user custom templates from local storage
   static Future<List<ProjectTemplate>> loadCustomTemplates() async {

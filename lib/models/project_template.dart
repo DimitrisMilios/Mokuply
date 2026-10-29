@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/constants/store_specs.dart';
+import 'template_assets.dart';
 import 'template_data.dart';
 
 /// A named set of screens shown in the template gallery: a built-in starter
@@ -23,7 +24,7 @@ class ProjectTemplate {
     required this.initialScreenshots,
   });
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson({AssetWriter? assets}) {
     return {
       'id': id,
       'title': title,
@@ -31,11 +32,11 @@ class ProjectTemplate {
       'description': description,
       'previewGradient': previewGradient.map((c) => c.toARGB32()).toList(),
       'platform': platform.name,
-      'initialScreenshots': initialScreenshots.map((s) => s.toJson()).toList(),
+      'initialScreenshots': initialScreenshots.map((s) => s.toJson(assets: assets)).toList(),
     };
   }
 
-  factory ProjectTemplate.fromJson(Map<String, dynamic> json) {
+  factory ProjectTemplate.fromJson(Map<String, dynamic> json, {AssetReader? assets}) {
     return ProjectTemplate(
       id: json['id'] as String? ?? 'custom_${DateTime.now().millisecondsSinceEpoch}',
       title: json['title'] as String? ?? 'Custom Template',
@@ -50,7 +51,7 @@ class ProjectTemplate {
         orElse: () => TargetPlatformType.appStore,
       ),
       initialScreenshots: (json['initialScreenshots'] as List?)
-              ?.map((s) => TemplateData.fromJson(s as Map<String, dynamic>))
+              ?.map((s) => TemplateData.fromJson(s as Map<String, dynamic>, assets: assets))
               .toList() ??
           const [],
     );
