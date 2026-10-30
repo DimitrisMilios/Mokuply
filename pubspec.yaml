@@ -2,7 +2,7 @@ name: mocuply
 description: "Design high-resolution App Store and Google Play mockup screenshots directly in your browser. 100% free, client-side, open-source."
 publish_to: 'none'
 
-version: 1.1.1+3
+version: 1.2.0+4
 
 environment:
   sdk: ^3.11.5
