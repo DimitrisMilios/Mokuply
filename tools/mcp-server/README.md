@@ -53,6 +53,8 @@ npm run build
 
 ## 🤖 Configuring Your AI Agents
 
+> 💡 Prefer a guided setup with copy buttons? Open **[mockuply.web.app/#/connect-ai](https://mockuply.web.app/#/connect-ai)** (also linked as **Connect AI** in the app).
+
 ### 1. Claude Desktop
 
 Add this to your Claude Desktop configuration file:

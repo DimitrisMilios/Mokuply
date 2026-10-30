@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_links.dart';
+import '../../../services/link_opener.dart';
+import '../../../widgets/clay/clay.dart';
 
-/// Footer for HomeView: two lines of muted text, no border.
+/// Footer for HomeView: a line of muted text over a row of flat links
+/// (GitHub, AI setup, privacy, terms). No border.
 class HomeFooter extends StatelessWidget {
   const HomeFooter({super.key});
 
-  // TODO(links): make this a real link once url_launcher is a dependency.
-  // GitHub URL placeholder: https://github.com/<org>/mockuply
-  static const String _sourceLabel = 'Source on GitHub';
-
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 24),
+    void push(String route) => Navigator.of(context).pushNamed(route);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
+          const Text(
             'Mockuply · free and client-side · MIT',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -26,18 +28,55 @@ class HomeFooter extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(height: 6),
-          Text(
-            _sourceLabel,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: AppDimensions.fontSm,
-              fontWeight: FontWeight.w800,
-            ),
+          const SizedBox(height: 6),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 2,
+            runSpacing: 2,
+            children: [
+              _FooterLink(
+                label: 'Source on GitHub',
+                icon: Icons.code_rounded,
+                onPressed: () => LinkOpener.open(AppLinks.repo),
+              ),
+              _FooterLink(
+                label: 'Connect AI (MCP)',
+                icon: Icons.smart_toy_rounded,
+                onPressed: () => push(AppLinks.connectAiRoute),
+              ),
+              _FooterLink(
+                label: 'Privacy Policy',
+                icon: Icons.shield_outlined,
+                onPressed: () => push(AppLinks.privacyRoute),
+              ),
+              _FooterLink(
+                label: 'Terms of Use',
+                icon: Icons.description_outlined,
+                onPressed: () => push(AppLinks.termsRoute),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FooterLink extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _FooterLink({required this.label, required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClayButton.text(
+      label: label,
+      icon: icon,
+      size: ClayButtonSize.compact,
+      color: AppColors.textMuted,
+      onPressed: onPressed,
     );
   }
 }

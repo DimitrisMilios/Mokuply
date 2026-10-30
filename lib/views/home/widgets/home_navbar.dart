@@ -5,9 +5,10 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../viewmodels/library_viewmodel.dart';
 import '../../../widgets/clay/clay.dart';
 import '../../../widgets/shared/brand_logo.dart';
+import '../../info/connect_ai_view.dart';
 
 /// Floating sticky top header for HomeView: a clay panel with the logo tile,
-/// the wordmark and a gold "Start project" button.
+/// the wordmark, a "Connect AI" button and a gold "Start project" button.
 class HomeNavbar extends StatelessWidget {
   const HomeNavbar({super.key});
 
@@ -21,6 +22,7 @@ class HomeNavbar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingXxl),
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final bool showAiLabel = constraints.maxWidth >= 640;
             final bool showStartLabel = constraints.maxWidth >= 480;
             final bool showWordmark = constraints.maxWidth >= 360;
             void start() => context.read<LibraryViewModel>().startNewProject();
@@ -41,6 +43,8 @@ class HomeNavbar extends StatelessWidget {
                   ),
                 ],
                 const Spacer(),
+                ConnectAiButton(compact: !showAiLabel),
+                const SizedBox(width: AppDimensions.spacingMd),
                 if (showStartLabel)
                   ClayButton.gold(
                     label: 'Start project',
