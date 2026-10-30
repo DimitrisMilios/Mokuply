@@ -28,6 +28,7 @@ This comprehensive guide covers every tool, layout mode, design system detail, k
 10. [App Store Optimization (ASO) Playbook](#10-app-store-optimization-aso-playbook)
 11. [Complete Keyboard Shortcuts](#11-complete-keyboard-shortcuts)
 12. [Troubleshooting & FAQ](#12-troubleshooting--faq)
+13. [AI Agent & MCP Automation (Claude & Antigravity)](#13-ai-agent--mcp-automation-claude--antigravity)
 
 ---
 
@@ -325,6 +326,19 @@ High-converting screenshots can increase app downloads by over 30%. Follow these
 
 ### Q: Where are my drafts stored?
 > In your browser's HTML5 `localStorage` / IndexedDB. Clearing browser site data will reset saved local drafts, so make sure to download important projects as `.mokuply` files.
+
+---
+
+## 13. AI Agent & MCP Automation (Claude & Antigravity)
+
+Mokuply includes a dedicated **Model Context Protocol (MCP)** server (`tools/mcp-server`) that enables AI assistants like **Antigravity**, **Claude (Desktop & Code)**, and Cursor to design, screenshot, and manage mockups automatically:
+
+- **Simulator Screen Capture**: Automatically grab screenshots from running iOS Simulators (`xcrun simctl`) and Android Emulators (`adb`).
+- **Cross-Platform**: Full support across **macOS**, **Linux**, and **Windows**.
+- **Automated ASO Copy & Layouts**: AI generates high-converting marketing copy and packages dual-store `.mokuply` files.
+- **Instant Browser Studio Launch**: Opens Mokuply Web with your mockups pre-loaded via local bridge (`http://127.0.0.1:4004`).
+
+👉 **Read the complete guide: [MCP & AI Agent Guide](MCP_AI_AGENT_GUIDE.md)**
 
 ---
 

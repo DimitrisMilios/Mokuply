@@ -97,6 +97,12 @@ Best of all: **Mokuply is 100% client-side.** Everything is rendered in-memory v
 - Offscreen Flutter repaint boundary rendering ensures zero downscaling artifacts.
 - Export Apple App Store bundle (`.zip`), Google Play Store bundle (`.zip`), or both simultaneously with organized folder structures.
 
+### 🤖 AI Agent & MCP Integration (Antigravity & Claude)
+- **Model Context Protocol (MCP)** server included in `tools/mcp-server`.
+- Cross-platform support for **macOS**, **Linux**, and **Windows**.
+- Ask your AI assistant to capture running iOS Simulators (`xcrun simctl`) or Android Emulators (`adb`), write high-converting headlines, choose themes, and launch Mokuply with your mockups pre-loaded!
+- See the [MCP Server Guide](tools/mcp-server/README.md) for quick setup.
+
 ---
 
 ## ⌨️ Keyboard Shortcuts

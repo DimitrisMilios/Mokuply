@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../data/templates/builtin_templates.dart';
 import '../models/project_template.dart';
 import '../models/template_data.dart';
+import '../services/bridge_fetcher.dart';
 import '../services/export_service.dart';
 import '../services/file_service.dart';
 import '../services/storage_service.dart';
@@ -33,6 +34,18 @@ class LibraryViewModel extends ChangeNotifier {
     try {
       final custom = await StorageService.loadCustomTemplates();
       _setCustomTemplates(custom);
+
+      // Check if launched with a bridge URL or import URL: e.g. ?bridge=http://127.0.0.1:4004/session.mokuply
+      final bridgeUrl = Uri.base.queryParameters['bridge'] ?? Uri.base.queryParameters['import_url'];
+      if (bridgeUrl != null && bridgeUrl.isNotEmpty) {
+        final bytes = await BridgeFetcher.fetch(bridgeUrl);
+        if (bytes != null && bytes.isNotEmpty) {
+          final template = TemplatePackage.decode(bytes);
+          openTemplate(template);
+          return;
+        }
+      }
+
       final draft = await StorageService.loadActiveDraft();
       if (draft != null && draft.isNotEmpty) _savedDraft = draft;
       notifyListeners();

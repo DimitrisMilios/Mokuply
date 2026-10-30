@@ -1,0 +1,84 @@
+/**
+ * Mokuply Data Types
+ * Matches Dart definitions in `lib/models/` and `lib/core/constants/store_specs.dart`
+ */
+
+export type TargetPlatformType = 'appStore' | 'googlePlay';
+
+export type LayoutMode =
+  | 'angledLeftHero'
+  | 'angledRightHero'
+  | 'titleTopDeviceBottom'
+  | 'titleBottomDeviceTop'
+  | 'deviceCentered'
+  | 'fullBleedHero';
+
+export type DeviceFrameStyle = 'realistic' | 'minimalOutline' | 'none';
+
+export type TextAlign = 'left' | 'center' | 'right' | 'justify';
+
+export interface CanvasDeviceItemConfig {
+  id?: string;
+  frameStyle?: DeviceFrameStyle;
+  scale?: number;
+  offsetX?: number;
+  offsetY?: number;
+  rotation?: number;
+  hasShadow?: boolean;
+  iosScreenshot?: string; // asset path, e.g. "images/1.png"
+  androidScreenshot?: string;
+}
+
+export interface ScreenConfig {
+  name?: string;
+  platform?: TargetPlatformType;
+  layoutMode?: LayoutMode;
+  frameStyle?: DeviceFrameStyle;
+  titleText: string;
+  subtitleText?: string;
+  titleFont?: string;
+  subtitleFont?: string;
+  titleSize?: number;
+  subtitleSize?: number;
+  titleWeightIndex?: number; // 0-8, 6 is w700 bold, 7 is w800, 8 is w900
+  subtitleWeightIndex?: number; // 4 is w500
+  textColor?: string | number; // Hex string e.g. "#FFFFFF" or ARGB32 int
+  subtitleColor?: string | number;
+  titleAlignment?: TextAlign;
+  subtitleAlignment?: TextAlign;
+  selectedGradientIndex?: number;
+  customBackgroundColor?: string | number;
+  customGradientColors?: (string | number)[];
+  deviceScale?: number;
+  deviceOffsetX?: number;
+  deviceOffsetY?: number;
+  deviceRotation?: number;
+  hasShadow?: boolean;
+  textOffsetX?: number;
+  textOffsetY?: number;
+  subtitleOffsetX?: number;
+  subtitleOffsetY?: number;
+  devices?: CanvasDeviceItemConfig[];
+  /** Screenshot file path or buffer used to populate devices */
+  screenshotPath?: string;
+  iosScreenshotPath?: string;
+  androidScreenshotPath?: string;
+}
+
+export interface ProjectTemplateConfig {
+  id?: string;
+  title: string;
+  category?: string;
+  description?: string;
+  previewGradient?: (string | number)[];
+  platform?: TargetPlatformType;
+  screens: ScreenConfig[];
+}
+
+export interface CapturedDevice {
+  id: string;
+  name: string;
+  platform: 'ios' | 'android' | 'desktop';
+  state: 'booted' | 'device' | 'active';
+  details?: string;
+}
