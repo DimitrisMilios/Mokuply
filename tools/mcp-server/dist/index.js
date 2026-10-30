@@ -203,7 +203,7 @@ server.tool('mokuply_preview_in_browser', 'Opens Mokuply Web studio in your defa
     studioUrl: z
         .string()
         .optional()
-        .describe("URL to Mokuply Web app. Defaults to 'http://localhost:8080' or hosted instance."),
+        .describe("URL to Mokuply Web app. Defaults to the hosted app at https://mockuply.web.app; pass http://localhost:<port> for a local dev server."),
     bridgePort: z.number().optional().describe('Port for local MCP HTTP bridge. Defaults to 4004.'),
 }, async ({ studioUrl, bridgePort }) => {
     try {
@@ -220,7 +220,7 @@ server.tool('mokuply_preview_in_browser', 'Opens Mokuply Web studio in your defa
                 ],
             };
         }
-        const baseStudio = studioUrl ?? 'http://localhost:8080';
+        const baseStudio = studioUrl ?? 'https://mockuply.web.app';
         const fullUrl = `${baseStudio}?bridge=${encodeURIComponent(bridge.url + '/session.mokuply')}`;
         await openBrowser(fullUrl);
         return {

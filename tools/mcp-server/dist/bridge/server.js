@@ -16,6 +16,9 @@ export async function getOrStartBridgeServer(preferredPort = 4004) {
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
             res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+            // Lets an https page (the hosted app) read this loopback server under
+            // Chrome's Private Network Access preflight.
+            res.setHeader('Access-Control-Allow-Private-Network', 'true');
             if (req.method === 'OPTIONS') {
                 res.writeHead(204);
                 res.end();
