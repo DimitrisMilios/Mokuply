@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/store_specs.dart';
+import '../../core/layout/layout_anchors.dart';
 import '../../models/template_data.dart';
 
 /// Where the phone sits on a starter screen. Every starter set follows the
@@ -83,5 +84,25 @@ class StarterStyle {
       deviceOffsetY: placement.offsetY + extraOffsetY,
       deviceRotation: rotation,
     );
+  }
+}
+
+/// Headline placement for left-aligned sets. Text is positioned by its
+/// centre, so these turn a left edge and a top edge (design pixels) into the
+/// stored offsets. [widestLine] is the measured width of the longest line.
+class LeftHeadline {
+  LeftHeadline._();
+
+  /// Line height used by the canvas text renderer.
+  static const double lineHeight = 1.15;
+
+  static double offsetX({required double left, required double widestLine}) =>
+      (left + widestLine / 2 - DesignSpace.width / 2) / DesignSpace.offsetUnitX;
+
+  static double offsetY({required double top, required String text, required double fontSize}) {
+    final lines = '\n'.allMatches(text).length + 1;
+    final centre = top + lines * fontSize * lineHeight / 2;
+    final anchor = LayoutAnchors.forMode(LayoutMode.titleTopDeviceBottom).title * DesignSpace.height;
+    return (centre - anchor) / DesignSpace.offsetUnitY;
   }
 }

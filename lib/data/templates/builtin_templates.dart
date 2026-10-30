@@ -1,5 +1,6 @@
 import '../../models/project_template.dart';
 import 'pastel_marketplace.dart';
+import 'pink_getaway.dart';
 import 'simple_starters.dart';
 import 'team_organize.dart';
 
@@ -10,11 +11,11 @@ class BuiltInTemplates {
   /// Built once: templates are immutable.
   static final List<ProjectTemplate> all = List.unmodifiable([
     pastelMarketplaceTemplate(),
+    pinkGetawayTemplate(),
     teamOrganizeTemplate(),
     saasModernTemplate(),
     minimalistCleanTemplate(),
     sunsetGlowTemplate(),
-    fitnessPulseTemplate(),
   ]);
 
   static ProjectTemplate _byId(String id) => all.firstWhere((t) => t.id == id);

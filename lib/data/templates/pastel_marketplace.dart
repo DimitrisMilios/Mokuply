@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/store_specs.dart';
-import '../../core/layout/layout_anchors.dart';
 import '../../models/canvas_device_item.dart';
 import '../../models/project_template.dart';
 import '../../models/template_data.dart';
+import 'starter_style.dart';
 
 /// One pastel colour per screen, big left-aligned headlines and frameless
 /// phones. Screen 1 opens with a large tilted phone that runs off its right
@@ -72,10 +72,8 @@ ProjectTemplate pastelMarketplaceTemplate() {
   );
 }
 
-/// Geometry for the pastel set, in design pixels unless noted. Text and
-/// phones are placed by their centre, so the left-aligned headline's X offset
-/// is derived from the width of its widest line (measured for Inter SemiBold
-/// at [titleSize]).
+/// Geometry for the pastel set, in design pixels unless noted. Headline
+/// widths ([widestLine]) are measured for Inter SemiBold at [titleSize].
 class _PastelScreen {
   _PastelScreen._();
 
@@ -109,11 +107,6 @@ class _PastelScreen {
     double titleTop = defaultTitleTop,
     List<CanvasDeviceItem> devices = const [],
   }) {
-    final lines = title.isEmpty ? 0 : '\n'.allMatches(title).length + 1;
-    final centreX = titleLeft + widestLine / 2;
-    final centreY = titleTop + lines * titleSize * 1.15 / 2;
-    final anchorY = LayoutAnchors.forMode(LayoutMode.titleTopDeviceBottom).title * DesignSpace.height;
-
     return TemplateData(
       titleText: title,
       subtitleText: '',
@@ -123,8 +116,8 @@ class _PastelScreen {
       textColor: titleColor,
       titleAlignment: TextAlign.left,
       subtitleAlignment: TextAlign.left,
-      textOffsetX: (centreX - DesignSpace.width / 2) / DesignSpace.offsetUnitX,
-      textOffsetY: (centreY - anchorY) / DesignSpace.offsetUnitY,
+      textOffsetX: LeftHeadline.offsetX(left: titleLeft, widestLine: widestLine),
+      textOffsetY: LeftHeadline.offsetY(top: titleTop, text: title, fontSize: titleSize),
       customBackgroundColor: background,
       layoutMode: LayoutMode.titleTopDeviceBottom,
       frameStyle: DeviceFrameStyle.none,
