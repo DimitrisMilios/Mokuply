@@ -69,6 +69,8 @@ The **Mokuply MCP Server** (`tools/mcp-server`) turns Mokuply into an AI-control
 
 ## 3. Setup & Installation
 
+> 💡 Prefer a guided setup with copy buttons? Open **[mockuply.web.app/#/connect-ai](https://mockuply.web.app/#/connect-ai)** (also linked as **Connect AI** in the app).
+
 ### Step 1: Build the MCP Server
 
 Ensure you have **Node.js 18+** installed. From the root of the Mokuply repository:
@@ -178,7 +180,7 @@ Compiles screenshots and copy into a dual-store Mokuply project.
 ### 5. `mokuply_preview_in_browser`
 Spins up the local in-memory bridge and launches Mokuply Web in your default browser.
 - **Parameters**:
-  - `studioUrl` *(optional)*: Base URL for Mokuply (defaults to `http://localhost:8080`).
+  - `studioUrl` *(optional)*: Base URL for Mokuply (defaults to the hosted app, `https://mockuply.web.app`; pass `http://localhost:<port>` for a local dev server).
   - `bridgePort` *(optional)*: Local bridge port (defaults to `4004`).
 
 ### 6. `mokuply_get_themes_and_layouts`
@@ -199,7 +201,7 @@ Returns design reference documentation for the LLM to choose harmonious color pa
    - Screen 1: *"Build Daily Habits"*, `titleTopDeviceBottom` layout.
    - Screen 2: *"Track Your Progress"*, `angledLeftHero` layout.
    - Screen 3: *"Never Break The Chain"*, `titleTopDeviceBottom` layout.
-4. Calls `mokuply_preview_in_browser` → opens `http://localhost:8080?bridge=http://127.0.0.1:4004/session.mokuply`.
+4. Calls `mokuply_preview_in_browser` → opens `https://mockuply.web.app?bridge=http://127.0.0.1:4004/session.mokuply`.
 
 ---
 
