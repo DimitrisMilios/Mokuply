@@ -71,7 +71,7 @@ Add this to your Claude Desktop configuration file:
   }
 }
 ```
-*(Replace `<PATH_TO_MOKUPLY>` with your absolute path, e.g. `/Users/dmilios/Documents/GitHub/Mokuply` or `C:/Users/.../Mokuply`)*
+*(Replace `<PATH_TO_MOKUPLY>` with your absolute path, e.g. `/path/to/Mokuply` on macOS/Linux or `C:/path/to/Mokuply` on Windows)*
 
 ### 2. Claude Code CLI
 ```bash

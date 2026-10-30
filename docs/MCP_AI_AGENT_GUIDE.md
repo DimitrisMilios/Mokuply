@@ -107,7 +107,7 @@ Add the `mokuply` server entry:
 }
 ```
 
-*(Replace `<ABSOLUTE_PATH_TO_MOKUPLY>` with the absolute path on your system, e.g. `/Users/dmilios/Documents/GitHub/Mokuply` on Mac or `C:/Users/.../Mokuply` on Windows).*
+*(Replace `<ABSOLUTE_PATH_TO_MOKUPLY>` with the absolute path on your system, e.g. `/path/to/Mokuply` on macOS/Linux or `C:/path/to/Mokuply` on Windows).*
 
 Restart Claude Desktop. You will see the hammer icon with `mokuply` tools available!
 
