@@ -1,4 +1,5 @@
 import '../../models/project_template.dart';
+import 'messenger_dark.dart';
 import 'pastel_marketplace.dart';
 import 'pink_getaway.dart';
 import 'simple_starters.dart';
@@ -13,7 +14,7 @@ class BuiltInTemplates {
     pastelMarketplaceTemplate(),
     pinkGetawayTemplate(),
     teamOrganizeTemplate(),
-    saasModernTemplate(),
+    messengerDarkTemplate(),
     minimalistCleanTemplate(),
     sunsetGlowTemplate(),
   ]);
@@ -23,6 +24,6 @@ class BuiltInTemplates {
   /// The set a new project starts from.
   static final ProjectTemplate starter = _byId('team_organize');
 
-  /// The set "Reset set" restores.
-  static final ProjectTemplate resetSet = _byId('saas_modern');
+  /// The set "Reset set" restores: the same one new projects start from.
+  static ProjectTemplate get resetSet => starter;
 }

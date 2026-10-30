@@ -3,36 +3,6 @@ import '../../core/constants/store_specs.dart';
 import '../../models/project_template.dart';
 import 'starter_style.dart';
 
-/// Deep navy set with bold white headlines.
-ProjectTemplate saasModernTemplate() {
-  const style = StarterStyle(
-    background: [Color(0xFF0B1120), Color(0xFF131C3B), Color(0xFF1D2E6B)],
-    titleColor: Colors.white,
-    subtitleColor: Color(0xFFB6C2E2),
-    titleFont: 'Outfit',
-    titleSize: 104.0,
-    subtitleSize: 44.0,
-    titleWeight: FontWeight.w800,
-    subtitleWeight: FontWeight.w500,
-  );
-  return ProjectTemplate(
-    id: 'saas_modern',
-    title: 'SaaS & Productivity Suite',
-    category: 'Productivity',
-    description: 'Deep navy set with bold white headlines and a calm, consistent backdrop across all six screens.',
-    previewGradient: style.background,
-    platform: style.platform,
-    initialScreenshots: [
-      style.screen('Build Stunning Apps', 'Design high-res store screenshots in seconds', Placement.bleedBottom),
-      style.screen('Realtime Analytics', 'Track your growth and metrics live', Placement.bleedTop),
-      style.screen('Seamless Integration', 'Connect with all your favorite dev tools', Placement.bleedBottom),
-      style.screen('Blazing Fast', 'Built for speed, scale, and high output', Placement.centered),
-      style.screen('Secure Cloud Sync', '100% end-to-end encrypted storage', Placement.bleedBottom),
-      style.screen('Export Anywhere', 'Download store-ready PNGs instantly', Placement.bleedTop),
-    ],
-  );
-}
-
 /// Warm stone backdrop with editorial serif headlines.
 ProjectTemplate minimalistCleanTemplate() {
   const style = StarterStyle(
