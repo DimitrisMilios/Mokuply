@@ -87,7 +87,7 @@ class StarterStyle {
   }
 }
 
-/// Headline placement for left-aligned sets. Text is positioned by its
+/// Headline placement from measured edges. Text is positioned by its
 /// centre, so these turn a left edge and a top edge (design pixels) into the
 /// stored offsets. [widestLine] is the measured width of the longest line.
 class LeftHeadline {
@@ -99,10 +99,12 @@ class LeftHeadline {
   static double offsetX({required double left, required double widestLine}) =>
       (left + widestLine / 2 - DesignSpace.width / 2) / DesignSpace.offsetUnitX;
 
-  static double offsetY({required double top, required String text, required double fontSize}) {
+  /// [anchor] is the layout anchor (fraction of the design height) the text
+  /// is stored against; it defaults to the headline anchor.
+  static double offsetY({required double top, required String text, required double fontSize, double? anchor}) {
     final lines = '\n'.allMatches(text).length + 1;
     final centre = top + lines * fontSize * lineHeight / 2;
-    final anchor = LayoutAnchors.forMode(LayoutMode.titleTopDeviceBottom).title * DesignSpace.height;
-    return (centre - anchor) / DesignSpace.offsetUnitY;
+    final anchorY = (anchor ?? LayoutAnchors.forMode(LayoutMode.titleTopDeviceBottom).title) * DesignSpace.height;
+    return (centre - anchorY) / DesignSpace.offsetUnitY;
   }
 }
