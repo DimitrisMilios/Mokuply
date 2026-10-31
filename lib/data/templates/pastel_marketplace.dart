@@ -23,6 +23,7 @@ ProjectTemplate pastelMarketplaceTemplate() {
     category: 'Shopping',
     description: 'Soft pastel screens with big left-aligned headlines and a tilted hero phone that flows into screen two.',
     previewGradient: const [mint, lavender, pink],
+    previewImage: 'assets/template_previews/pastel_marketplace.webp',
     platform: TargetPlatformType.appStore,
     initialScreenshots: [
       // 1. Four-line headline over a big tilted phone bleeding off the right edge.

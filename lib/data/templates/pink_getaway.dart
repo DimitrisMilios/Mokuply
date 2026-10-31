@@ -16,6 +16,7 @@ ProjectTemplate pinkGetawayTemplate() {
     category: 'Travel',
     description: 'Bold pink screens with white rounded headlines and a tilted phone that flows into screen two.',
     previewGradient: const [Color(0xFFEC3B74), _PinkScreen.background, Color(0xFFC8124F)],
+    previewImage: 'assets/template_previews/pink_getaway.webp',
     platform: TargetPlatformType.appStore,
     initialScreenshots: [
       // 1. Big three-line headline; the tilted phone enters from the right edge.

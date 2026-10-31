@@ -28,3 +28,4 @@ flutter:
   assets:
     - assets/branding/mockuply_logo.png
     - assets/clay/
+    - assets/template_previews/
