@@ -9,7 +9,7 @@ import 'package:mocuply/data/templates/builtin_templates.dart';
 import 'package:mocuply/core/constants/store_specs.dart';
 import 'package:mocuply/widgets/canvas/canvas_mockup_widget.dart';
 
-/// Renders the export widget tree for the first template's screens and writes
+/// Renders the export widget tree for the starter template's screens and writes
 /// the PNG bytes to `EXPORT_OUT`. Run on two commits and diff the folders to
 /// prove the exported pixels did not change. Skipped when `EXPORT_OUT` is
 /// unset. One test per screen so a late google_fonts error (fonts are not
@@ -21,7 +21,7 @@ void main() {
     return;
   }
 
-  final template = BuiltInTemplates.all.first;
+  final template = BuiltInTemplates.starter;
   final screens = template.initialScreenshots.take(1).toList();
 
   for (final target in TargetPlatformType.values) {

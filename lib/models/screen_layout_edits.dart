@@ -104,6 +104,8 @@ extension ScreenLayoutEdits on TemplateData {
       customBackgroundColor: () => source.customBackgroundColor,
       customGradientColors: () => source.customGradientColors,
       customBackgroundImageBytes: () => source.customBackgroundImageBytes,
+      backgroundBandColor: () => source.backgroundBandColor,
+      backgroundBandTop: source.backgroundBandTop,
       deviceScale: source.deviceScale,
       deviceOffsetX: source.deviceOffsetX,
       deviceOffsetY: source.deviceOffsetY,
@@ -127,10 +129,18 @@ extension ScreenLayoutEdits on TemplateData {
   );
 
   // --- Background ---
+  // Picking a backdrop replaces the whole backdrop, including a template's band.
 
-  TemplateData withGradientPreset(int index) =>
-      copyWith(selectedGradientIndex: index, customBackgroundColor: () => null, customGradientColors: () => null);
+  TemplateData withGradientPreset(int index) => copyWith(
+    selectedGradientIndex: index,
+    customBackgroundColor: () => null,
+    customGradientColors: () => null,
+    backgroundBandColor: () => null,
+  );
 
-  TemplateData withSolidBackground(Color color) =>
-      copyWith(customBackgroundColor: () => color, customGradientColors: () => null);
+  TemplateData withSolidBackground(Color color) => copyWith(
+    customBackgroundColor: () => color,
+    customGradientColors: () => null,
+    backgroundBandColor: () => null,
+  );
 }
