@@ -3,7 +3,7 @@ import '../../core/constants/store_specs.dart';
 import '../../core/layout/layout_anchors.dart';
 import '../../models/project_template.dart';
 import '../../models/template_data.dart';
-import 'starter_style.dart';
+import 'left_headline.dart';
 
 /// Deep teal set with calm white two-line captions. Screens alternate: caption
 /// on top with the phone cropped by the bottom edge, then the phone cropped by

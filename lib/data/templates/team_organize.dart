@@ -4,7 +4,7 @@ import '../../core/layout/layout_anchors.dart';
 import '../../models/canvas_device_item.dart';
 import '../../models/project_template.dart';
 import '../../models/template_data.dart';
-import 'starter_style.dart';
+import 'left_headline.dart';
 
 /// Airy light-blue set: a big blue keyword over a dark navy second line,
 /// opening with two tilted phones that span screens 1 and 2, then upright

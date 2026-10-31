@@ -4,7 +4,7 @@ import '../../models/canvas_device_item.dart';
 import '../../models/canvas_text_item.dart';
 import '../../models/project_template.dart';
 import '../../models/template_data.dart';
-import 'starter_style.dart';
+import 'left_headline.dart';
 
 /// Bold pink screens with white rounded headlines and a small white dot in the
 /// corner. Screen 1 shows the left half of a large tilted phone whose right

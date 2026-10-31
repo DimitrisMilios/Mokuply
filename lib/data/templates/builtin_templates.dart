@@ -1,8 +1,9 @@
 import '../../models/project_template.dart';
+import 'gradient_chat.dart';
+import 'invest_navy.dart';
 import 'messenger_dark.dart';
 import 'pastel_marketplace.dart';
 import 'pink_getaway.dart';
-import 'simple_starters.dart';
 import 'team_organize.dart';
 
 /// The starter sets shipped with the app, in gallery order.
@@ -15,8 +16,8 @@ class BuiltInTemplates {
     pinkGetawayTemplate(),
     teamOrganizeTemplate(),
     messengerDarkTemplate(),
-    minimalistCleanTemplate(),
-    sunsetGlowTemplate(),
+    investNavyTemplate(),
+    gradientChatTemplate(),
   ]);
 
   static ProjectTemplate _byId(String id) => all.firstWhere((t) => t.id == id);

@@ -36,6 +36,12 @@ class TemplateData {
   final List<Color>? customGradientColors;
   final Uint8List? customBackgroundImageBytes;
 
+  /// Optional flat band over the lower part of the backdrop, drawn behind
+  /// every element: from [backgroundBandTop] (fraction of the design height)
+  /// down to the bottom edge. Null colour means no band.
+  final Color? backgroundBandColor;
+  final double backgroundBandTop;
+
   /// Defaults for the primary phone frame when [devices] is empty.
   final double deviceScale;
   final double deviceOffsetX;
@@ -74,6 +80,8 @@ class TemplateData {
     this.customBackgroundColor,
     this.customGradientColors,
     this.customBackgroundImageBytes,
+    this.backgroundBandColor,
+    this.backgroundBandTop = 0.7,
     this.deviceScale = 0.92,
     this.deviceOffsetX = 0.0,
     this.deviceOffsetY = 0.0,
@@ -126,6 +134,8 @@ class TemplateData {
     Color? Function()? customBackgroundColor,
     List<Color>? Function()? customGradientColors,
     Uint8List? Function()? customBackgroundImageBytes,
+    Color? Function()? backgroundBandColor,
+    double? backgroundBandTop,
     double? deviceScale,
     double? deviceOffsetX,
     double? deviceOffsetY,
@@ -161,6 +171,8 @@ class TemplateData {
       customGradientColors: customGradientColors != null ? customGradientColors() : this.customGradientColors,
       customBackgroundImageBytes:
           customBackgroundImageBytes != null ? customBackgroundImageBytes() : this.customBackgroundImageBytes,
+      backgroundBandColor: backgroundBandColor != null ? backgroundBandColor() : this.backgroundBandColor,
+      backgroundBandTop: backgroundBandTop ?? this.backgroundBandTop,
       deviceScale: deviceScale ?? this.deviceScale,
       deviceOffsetX: deviceOffsetX ?? this.deviceOffsetX,
       deviceOffsetY: deviceOffsetY ?? this.deviceOffsetY,
@@ -201,6 +213,8 @@ class TemplateData {
       'customGradientColors': customGradientColors?.map((c) => c.toARGB32()).toList(),
       if (assets != null && customBackgroundImageBytes != null)
         'customBackgroundImage': assets(customBackgroundImageBytes!),
+      'backgroundBandColor': backgroundBandColor?.toARGB32(),
+      'backgroundBandTop': backgroundBandTop,
       'deviceScale': deviceScale,
       'deviceOffsetX': deviceOffsetX,
       'deviceOffsetY': deviceOffsetY,
@@ -266,6 +280,8 @@ class TemplateData {
           ? (json['customGradientColors'] as List).map((c) => Color(c as int)).toList()
           : null,
       customBackgroundImageBytes: readAsset(json['customBackgroundImage'], assets),
+      backgroundBandColor: json['backgroundBandColor'] != null ? Color(json['backgroundBandColor'] as int) : null,
+      backgroundBandTop: (json['backgroundBandTop'] as num?)?.toDouble() ?? 0.7,
       deviceScale: (json['deviceScale'] as num?)?.toDouble() ?? 0.92,
       deviceOffsetX: (json['deviceOffsetX'] as num?)?.toDouble() ?? 0.0,
       deviceOffsetY: (json['deviceOffsetY'] as num?)?.toDouble() ?? 0.0,

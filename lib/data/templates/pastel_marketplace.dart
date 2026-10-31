@@ -3,7 +3,7 @@ import '../../core/constants/store_specs.dart';
 import '../../models/canvas_device_item.dart';
 import '../../models/project_template.dart';
 import '../../models/template_data.dart';
-import 'starter_style.dart';
+import 'left_headline.dart';
 
 /// One pastel colour per screen, big left-aligned headlines and frameless
 /// phones. Screen 1 opens with a large tilted phone that runs off its right

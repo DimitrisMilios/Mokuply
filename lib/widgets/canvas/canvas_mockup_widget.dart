@@ -70,6 +70,14 @@ class CanvasMockupWidget extends StatelessWidget {
                   filterQuality: FilterQuality.medium,
                 ),
               ),
+            if (data.backgroundBandColor != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: CanvasGeometry(canvasSize).anchorY(data.backgroundBandTop),
+                bottom: 0,
+                child: ColoredBox(color: data.backgroundBandColor!),
+              ),
             DesignLayer(
               data: data,
               geometry: CanvasGeometry(canvasSize),

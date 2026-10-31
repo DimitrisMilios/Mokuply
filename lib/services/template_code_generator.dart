@@ -63,6 +63,13 @@ class TemplateCodeGenerator {
         final colorsList = s.customGradientColors!.map((c) => _formatColor(c)).join(', ');
         buffer.writeln('          customGradientColors: [$colorsList],');
       }
+      if (s.customBackgroundColor != null) {
+        buffer.writeln('          customBackgroundColor: ${_formatColor(s.customBackgroundColor!)},');
+      }
+      if (s.backgroundBandColor != null) {
+        buffer.writeln('          backgroundBandColor: ${_formatColor(s.backgroundBandColor!)},');
+        buffer.writeln('          backgroundBandTop: ${s.backgroundBandTop},');
+      }
       buffer.writeln('          layoutMode: LayoutMode.${s.layoutMode.name},');
 
       if (s.devices.isNotEmpty) {
