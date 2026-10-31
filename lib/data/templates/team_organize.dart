@@ -16,6 +16,7 @@ ProjectTemplate teamOrganizeTemplate() {
     category: 'Productivity',
     description: 'Airy light-blue set with big blue keywords, a two-phone angled hero and upright phones after it.',
     previewGradient: _TeamScreen.background,
+    previewImage: 'assets/template_previews/team_organize.webp',
     platform: TargetPlatformType.appStore,
     initialScreenshots: [
       // 1. Left-aligned headline; the first tilted phone, with the second

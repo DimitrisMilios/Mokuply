@@ -115,7 +115,8 @@ class TemplateCard extends StatelessWidget {
   }
 }
 
-/// Sunken well with the template gradient inside and six tiny clay phones.
+/// Sunken well showing the template: its rendered preview strip when it has
+/// one, otherwise the template gradient with six tiny clay phones.
 class _PreviewTray extends StatelessWidget {
   final ProjectTemplate template;
   final double tilt;
@@ -125,6 +126,63 @@ class _PreviewTray extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final image = template.previewImage;
+    return ClayWell(
+      height: height,
+      padding: EdgeInsets.zero,
+      radius: AppDimensions.radiusClay,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // The gradient sits inside the well (and behind the strip while it
+          // decodes).
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: template.previewGradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          if (image != null) _strip(image) else _phones(),
+          // Re-apply the inset lighting over the content so it still reads
+          // as sunken (it would otherwise cover the well's shading).
+          const IgnorePointer(
+            child: DecoratedBox(
+              decoration: ClayDecoration.well(
+                color: Colors.transparent,
+                radius: AppDimensions.radiusClay,
+                depth: 5,
+                shadeOpacity: 0.18,
+                highlightOpacity: 0.55,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The rendered strip, anchored to the top so the headlines stay visible
+  /// when the card is wide; zooms in slightly on hover.
+  Widget _strip(String asset) {
+    final zoom = 1 + 0.04 * (tilt / (2 * math.pi / 180));
+    return Transform.scale(
+      scale: zoom,
+      alignment: Alignment.topCenter,
+      child: Image.asset(
+        asset,
+        fit: BoxFit.cover,
+        alignment: Alignment.topCenter,
+        filterQuality: FilterQuality.medium,
+        gaplessPlayback: true,
+      ),
+    );
+  }
+
+  Widget _phones() {
     final phones = Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(template.initialScreenshots.length, (i) {
@@ -152,46 +210,12 @@ class _PreviewTray extends StatelessWidget {
       child: phones,
     );
 
-    return ClayWell(
-      height: height,
-      padding: EdgeInsets.zero,
-      radius: AppDimensions.radiusClay,
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // The gradient sits inside the well.
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: template.previewGradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          // Re-apply the inset lighting over the gradient so it still reads
-          // as sunken (the gradient would otherwise cover the well's shading).
-          const IgnorePointer(
-            child: DecoratedBox(
-              decoration: ClayDecoration.well(
-                color: Colors.transparent,
-                radius: AppDimensions.radiusClay,
-                depth: 5,
-                shadeOpacity: 0.18,
-                highlightOpacity: 0.55,
-              ),
-            ),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: tilted,
-            ),
-          ),
-        ],
+    return Center(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: tilted,
       ),
     );
   }

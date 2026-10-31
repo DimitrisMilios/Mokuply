@@ -11,6 +11,11 @@ class ProjectTemplate {
   final String category;
   final String description;
   final List<Color> previewGradient;
+
+  /// Asset path of a rendered strip of the set, shown in the gallery card.
+  /// Built-in templates only; saved and imported ones fall back to the
+  /// gradient tray, so it is not serialised.
+  final String? previewImage;
   final TargetPlatformType platform;
   final List<TemplateData> initialScreenshots;
 
@@ -20,6 +25,7 @@ class ProjectTemplate {
     required this.category,
     required this.description,
     required this.previewGradient,
+    this.previewImage,
     required this.platform,
     required this.initialScreenshots,
   });

@@ -15,6 +15,7 @@ ProjectTemplate gradientChatTemplate() {
     category: 'Communication',
     description: 'A blue-to-magenta gradient that flows across all six screens, light captions and frameless phones.',
     previewGradient: const [Color(0xFF3552D6), Color(0xFF9E50D9), Color(0xFFE5508A)],
+    previewImage: 'assets/template_previews/gradient_chat.webp',
     platform: TargetPlatformType.googlePlay,
     initialScreenshots: [
       _ChatScreen.opening(),

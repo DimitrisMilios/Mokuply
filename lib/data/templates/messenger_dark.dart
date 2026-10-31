@@ -15,6 +15,7 @@ ProjectTemplate messengerDarkTemplate() {
     category: 'Social',
     description: 'Deep teal screens with calm white captions that alternate above and below upright phones.',
     previewGradient: _MessengerScreen.background,
+    previewImage: 'assets/template_previews/messenger_dark.webp',
     platform: TargetPlatformType.appStore,
     initialScreenshots: [
       _MessengerScreen.captionTop('Simple, private\nreal-time chat'),
