@@ -18,6 +18,7 @@ ProjectTemplate investNavyTemplate() {
     category: 'Finance',
     description: 'Serif headlines on navy and white with a split backdrop, a quote screen and an angled phone collage.',
     previewGradient: const [_InvestScreen.navy, Color(0xFF3A4A9A), Colors.white],
+    previewImage: 'assets/template_previews/invest_navy.webp',
     platform: TargetPlatformType.appStore,
     initialScreenshots: [
       _InvestScreen.typeOnly(),
