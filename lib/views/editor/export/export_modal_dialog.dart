@@ -35,7 +35,14 @@ class ExportModalDialog extends StatefulWidget {
   const ExportModalDialog({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showClayDialog<void>(context: context, builder: (ctx) => const ExportModalDialog());
+    final export = context.read<ExportViewModel>();
+    return showClayDialog<void>(
+      context: context,
+      builder: (_) => ChangeNotifierProvider<ExportViewModel>.value(
+        value: export,
+        child: const ExportModalDialog(),
+      ),
+    );
   }
 
   @override
